@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.timingchecks"><application android:label="Reader touch timing checks"/><instrumentation android:name="com.example.yuejie.TimingTouchChecks" android:targetPackage="com.example.yuejie" android:functionalTest="true"/></manifest>

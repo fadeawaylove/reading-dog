@@ -1,0 +1,35 @@
+# Local analysis and third-party reference artifacts
+/research/
+/root-work/
+/fanqie-*.apk
+/fanqie-*.png
+/fanqie-rea-report.md
+
+# Generated Android outputs and local signing identity
+**/build/
+**/*-build/
+**/artifacts/
+**/releases/
+**/signing/
+*.apk
+*.class
+*.dex
+*.jar
+*.keystore
+*.jks
+*.log
+*.db
+*.db-*
+__pycache__/
+
+# Device snapshots, captures and local test identities
+/android-replica/tests/*/
+!/android-replica/tests/assets/
+/android-replica/tests/assets/vectors.tsv
+/android-replica/tests/assets/comment-signatures.json
+/android-replica/tests/assets/expected-text.json
+/android-replica/tests/*.png
+/android-replica/tests/*.xml
+!/android-replica/tests/*Manifest.xml
+/android-replica/tests/*.json
+/android-replica/tests/*.tsv
