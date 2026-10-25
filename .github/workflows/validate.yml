@@ -5,6 +5,11 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Git ref to validate
+        required: false
+        type: string
 permissions:
   contents: read
 jobs:
@@ -12,11 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Install Android SDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - name: Check version and build APK
@@ -38,6 +44,7 @@ jobs:
           "$BT/d8" --lib "$ANDROID_JAR" --output "$OUT/dex" "$OUT/classes.jar"
           jar uf "$OUT/unsigned.apk" -C "$OUT/dex" classes.dex
           "$BT/zipalign" -f 4 "$OUT/unsigned.apk" "$OUT/aligned.apk"
-          "$BT/aapt2" dump badging "$OUT/aligned.apk" | head -1
+          "$BT/aapt2" dump badging "$OUT/aligned.apk" > "$OUT/badging.txt"
+          head -1 "$OUT/badging.txt"
           unzip -t "$OUT/aligned.apk"
           echo 'Source, resources, DEX and APK packaging checks passed.' >> "$GITHUB_STEP_SUMMARY"
