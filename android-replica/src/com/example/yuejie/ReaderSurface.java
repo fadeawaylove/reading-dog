@@ -3,7 +3,7 @@ import android.content.*;import android.graphics.*;import android.view.*;import 
 /** Three native page views rotate on commit. Only composition changes during a gesture. */
 final class ReaderSurface extends ViewGroup {
  static final class Frame {final String id,title;final int chapterIndex,pageIndex,totalChapters;final ReaderPaginator layout;Frame(String id,String title,int index,int total,ReaderPaginator layout,int page){this.id=id;this.title=title;chapterIndex=index;totalChapters=total;this.layout=layout;pageIndex=page;}int offset(){return layout.pages.get(pageIndex).start;}}
- interface Host {Frame adjacent(int direction);void commit(Frame f);void needChapter(int direction);void center();void sized(int width,int height);int battery();default boolean charging(){return false;}Map<Integer,Long> commentCounts(String chapter);void paragraph(int start);default boolean canTurn(){return true;}default String bookProgress(Frame f){return "全书页码计算中";}}
+ interface Host {Frame adjacent(int direction);void commit(Frame f);void needChapter(int direction);void center();void sized(int width,int height);int battery();default boolean charging(){return false;}Map<Integer,Long> commentCounts(String chapter);void paragraph(int start);default boolean canTurn(){return true;}default void idle(){}default String bookProgress(Frame f){return "全书页码计算中";}}
  final Host host;ReaderSettings settings;Frame frame,target;PageTurnRenderer renderer;PageTurnMode activeMode;ReaderPageView[] pages;ReaderGestureController gestures;final Scroller scroller;final Paint small=new Paint(3);boolean renderingSuspended,dragging,vertical,settling,pendingCommit,pendingVisuals;float drag,downX,downY,lastX,lastY;int direction;VelocityTracker velocity;int commits,cancels,sceneRequests,sceneDraws,animationFrames;long animationNanos;float settleStart,settleEnd,settleYStart,settleYEnd,settleFingerX;Frame settleTarget;
  final Runnable warmer=()->warmNow();final Runnable frameTick=()->requestScene();
  ReaderSurface(Context c,ReaderSettings settings,Host host){super(c);this.settings=settings;this.host=host;activeMode=settings.pageTurnMode;renderer=PageTurnRenderer.create(activeMode);scroller=new Scroller(c);pages=new ReaderPageView[]{new ReaderPageView(this),new ReaderPageView(this),new ReaderPageView(this)};for(ReaderPageView page:pages)addView(page,new LayoutParams(-1,-1));gestures=new ReaderGestureController(this);setWillNotDraw(true);setClipChildren(true);setFocusable(true);setContentDescription("小说正文，点击中间显示菜单，左右翻页");}
@@ -23,7 +23,7 @@ final class ReaderSurface extends ViewGroup {
  void requestScene(){sceneRequests++;super.invalidate();}
  @Override public void invalidate(){if(pages==null){super.invalidate();return;}refreshVisuals();}
  void refreshVisuals(){if(dragging||animating()){pendingVisuals=true;return;}boolean changed=false;for(ReaderPageView p:pages)changed|=p.refresh(false);if(changed){renderer.release();warmPages();}pendingVisuals=false;}
- void flushVisuals(){if(pendingVisuals)refreshVisuals();warmPages();}
+ void flushVisuals(){if(pendingVisuals)refreshVisuals();warmPages();host.idle();}
  void suspendRendering(){renderingSuspended=true;removeCallbacks(warmer);cancelAnimation();renderer.release();}
  void resumeRendering(){renderingSuspended=false;refreshVisuals();warmPages();}
  void invalidatePageImages(){cancelAnimation();renderer.release();for(ReaderPageView p:pages)p.refresh(true);warmPages();}

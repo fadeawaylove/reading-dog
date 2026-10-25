@@ -10,10 +10,6 @@ on:
         description: Git ref to validate
         required: false
         type: string
-      publish_v011:
-        description: Publish the verified v0.11 signed assets
-        type: boolean
-        default: false
 permissions:
   contents: read
 jobs:
@@ -54,20 +50,39 @@ jobs:
           echo 'Source, resources, DEX and APK packaging checks passed.' >> "$GITHUB_STEP_SUMMARY"
   publish:
     needs: build
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_v011 && inputs.source_ref == 'v0.11' }}
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: release-assets/v0.11
+          ref: release-assets/${{ github.ref_name }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android build tools
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
       - name: Verify and publish signed APK
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          VERSION=$(python3 -c 'import json; print(json.load(open("android-replica/version.json"))["name"])')
+          CODE=$(python3 -c 'import json; print(json.load(open("android-replica/version.json"))["code"])')
+          test "$TAG" = "v$VERSION"
           cd android-replica/releases
-          echo 'e0550bb4c13fb313b654cea63b9360e6ca4825785b9cdc53f911daef7e022b11  reading-dog-0.11.apk' | sha256sum -c -
           sha256sum -c SHA256SUMS.txt
-          gh release create v0.11 reading-dog-0.11.apk SHA256SUMS.txt --verify-tag --latest --title '阅读狗 v0.11' --notes-file ../../RELEASE_NOTES.md
+          APK="reading-dog-$VERSION.apk"
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          "$BT/apksigner" verify --print-certs "$APK" | tee cert.txt
+          grep -F '3d036c2956aa9369777eb0966aa61ea6c84870a2c87860cd8e8c020ff8990bb8' cert.txt
+          "$BT/aapt2" dump badging "$APK" > badging.txt
+          grep -F "versionCode='$CODE' versionName='$VERSION'" badging.txt
+          python3 -c 'from pathlib import Path; s=Path("../../RELEASE_NOTES.md").read_text(); Path("/tmp/release-notes.md").write_text(s.split("\n# ",1)[0])'
+          gh release create "$TAG" "$APK" SHA256SUMS.txt --verify-tag --latest --title "阅读狗 $TAG" --notes-file /tmp/release-notes.md
+          gh release download "$TAG" --pattern "$APK" --pattern SHA256SUMS.txt --dir "$RUNNER_TEMP/published"
+          (cd "$RUNNER_TEMP/published" && sha256sum -c SHA256SUMS.txt)
+          gh release view "$TAG" --json url,isDraft,isPrerelease,assets

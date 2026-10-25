@@ -20,6 +20,8 @@ Android 原生 Java，包名 `com.example.yuejie`，版本 0.11（由 `version.j
 
 连载末章自动检查更新修复见 [CATALOG-UPDATE-FIX.md](CATALOG-UPDATE-FIX.md)。
 
+进入阅读时先显示缓存正文，再静默刷新一次目录；发现追加的新章后补入后续五章缓存，并提前排版紧邻下一章。进入最新目录的最后五章范围后，每进入一章再静默检查一次；同章翻页、重排和停留不会重复请求，没有定时轮询。退出阅读后停止本轮检查，返回阅读时重新检查。失败静默保留正文，末章继续保留主动检查和重试入口。验证记录见 [入口刷新](ENTRY-DIRECTORY-UPDATE.md)和[最后五章检查](PROGRESS-DIRECTORY-UPDATE.md)。
+
 首页后台刷新、下拉刷新和新章标记见 [SHELF-REFRESH.md](SHELF-REFRESH.md)。固定交付 APK 位于 `artifacts/reading-dog-0.9-shelf-refresh.apk`。
 
 ## 构建
