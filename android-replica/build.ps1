@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$version = Get-Content (Join-Path $root 'version.json') -Raw | ConvertFrom-Json
 $sdk = 'C:\Android\Sdk'; $bt = "$sdk\build-tools\35.0.0"; $java = 'C:\Program Files\Android\Android Studio\jbr\bin'
 $env:Path = "$java;$env:Path"
 Remove-Item "$root\build" -Recurse -Force -ErrorAction SilentlyContinue
@@ -8,7 +9,7 @@ New-Item "$root\build\classes" -ItemType Directory -Force | Out-Null
 New-Item "$root\build\compiled" -ItemType Directory -Force | Out-Null
 New-Item "$root\build\dex" -ItemType Directory -Force | Out-Null
 & "$bt\aapt2.exe" compile --dir "$root\res" -o "$root\build\compiled\res.zip"
-& "$bt\aapt2.exe" link -o "$root\build\unsigned.apk" -I "$sdk\platforms\android-35\android.jar" --manifest "$root\AndroidManifest.xml" "$root\build\compiled\res.zip" -A "$root\assets" --java "$root\build\generated" --min-sdk-version 24 --target-sdk-version 35 --version-code 10 --version-name 0.10
+& "$bt\aapt2.exe" link -o "$root\build\unsigned.apk" -I "$sdk\platforms\android-35\android.jar" --manifest "$root\AndroidManifest.xml" "$root\build\compiled\res.zip" -A "$root\assets" --java "$root\build\generated" --min-sdk-version 24 --target-sdk-version 35 --version-code $version.code --version-name $version.name
 $sources = Get-ChildItem "$root\src" -Recurse -Filter *.java | ForEach-Object FullName
 & javac -encoding UTF-8 -source 8 -target 8 -classpath "$sdk\platforms\android-35\android.jar" -d "$root\build\classes" $sources
 & "$bt\d8.bat" --lib "$sdk\platforms\android-35\android.jar" --output "$root\build\dex" (Get-ChildItem "$root\build\classes" -Recurse -Filter *.class | ForEach-Object FullName)

@@ -1,6 +1,6 @@
 # 阅读狗 · 极简单页主页
 
-Android 原生 Java，包名 `com.example.yuejie`，版本 0.9。四类接口直接由手机请求，不需要 Python、电脑服务或原下载器。
+Android 原生 Java，包名 `com.example.yuejie`，版本 0.11（由 `version.json` 统一配置）。四类接口直接由手机请求，不需要 Python、电脑服务或原下载器。
 
 ## 功能
 
