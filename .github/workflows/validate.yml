@@ -10,6 +10,10 @@ on:
         description: Git ref to validate
         required: false
         type: string
+      publish_v011:
+        description: Publish the verified v0.11 signed assets
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -48,3 +52,22 @@ jobs:
           head -1 "$OUT/badging.txt"
           unzip -t "$OUT/aligned.apk"
           echo 'Source, resources, DEX and APK packaging checks passed.' >> "$GITHUB_STEP_SUMMARY"
+  publish:
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_v011 && inputs.source_ref == 'v0.11' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release-assets/v0.11
+      - name: Verify and publish signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd android-replica/releases
+          echo 'e0550bb4c13fb313b654cea63b9360e6ca4825785b9cdc53f911daef7e022b11  reading-dog-0.11.apk' | sha256sum -c -
+          sha256sum -c SHA256SUMS.txt
+          gh release create v0.11 reading-dog-0.11.apk SHA256SUMS.txt --verify-tag --latest --title '阅读狗 v0.11' --notes-file ../../RELEASE_NOTES.md
