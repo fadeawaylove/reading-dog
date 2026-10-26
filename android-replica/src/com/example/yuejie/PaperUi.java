@@ -26,6 +26,7 @@ final class PaperUi {
  case "书签":case "已标记":line(c,6,3,18,3,18,22,12,17,6,22,6,3);if(name.equals("已标记")){Paint f=new Paint(p);f.setStyle(Paint.Style.FILL);c.drawRect(7,4,17,16,f);}break;
  case "排序":line(c,3,6,21,6);line(c,3,12,21,12);line(c,3,18,21,18);c.drawCircle(8,6,2,p);c.drawCircle(16,12,2,p);c.drawCircle(10,18,2,p);break;
  case "关闭":line(c,6,6,18,18);line(c,18,6,6,18);break;
+ case "关于阅读狗":c.drawCircle(12,12,9,p);line(c,12,10,12,17);c.drawCircle(12,7,.5f,p);break;
  default:line(c,5,10,3,4,9,6,15,6,21,4,19,12,19,18,14,22,9,22,5,18,5,10);c.drawCircle(9,12,.7f,p);c.drawCircle(15,12,.7f,p);line(c,10,16,14,16,12,18,10,16);}
  c.restore();}public void setAlpha(int a){p.setAlpha(a);}public void setColorFilter(ColorFilter f){p.setColorFilter(f);}public int getOpacity(){return PixelFormat.TRANSLUCENT;}}
 

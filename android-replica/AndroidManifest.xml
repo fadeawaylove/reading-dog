@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application android:theme="@style/AppTheme" android:label="阅读狗" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
         <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
             <intent-filter>
@@ -9,5 +10,7 @@
         </activity>
         <activity android:name=".ReaderActivity" android:screenOrientation="portrait" android:exported="false" />
         <activity android:name=".DetailActivity" android:screenOrientation="portrait" android:exported="false" />
+        <activity android:name=".AboutActivity" android:screenOrientation="portrait" android:exported="false" />
+        <provider android:name=".UpdateApkProvider" android:authorities="com.example.yuejie.updates" android:exported="false" android:grantUriPermissions="true" />
     </application>
 </manifest>

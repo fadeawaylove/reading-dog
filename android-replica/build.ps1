@@ -12,7 +12,8 @@ New-Item "$root\build\dex" -ItemType Directory -Force | Out-Null
 & "$bt\aapt2.exe" link -o "$root\build\unsigned.apk" -I "$sdk\platforms\android-35\android.jar" --manifest "$root\AndroidManifest.xml" "$root\build\compiled\res.zip" -A "$root\assets" --java "$root\build\generated" --min-sdk-version 24 --target-sdk-version 35 --version-code $version.code --version-name $version.name
 $sources = Get-ChildItem "$root\src" -Recurse -Filter *.java | ForEach-Object FullName
 & javac -encoding UTF-8 -source 8 -target 8 -classpath "$sdk\platforms\android-35\android.jar" -d "$root\build\classes" $sources
-& "$bt\d8.bat" --lib "$sdk\platforms\android-35\android.jar" --output "$root\build\dex" (Get-ChildItem "$root\build\classes" -Recurse -Filter *.class | ForEach-Object FullName)
+& jar cf "$root\build\classes.jar" -C "$root\build\classes" .
+& "$bt\d8.bat" --lib "$sdk\platforms\android-35\android.jar" --output "$root\build\dex" "$root\build\classes.jar"
 & jar uf "$root\build\unsigned.apk" -C "$root\build\dex" classes.dex
 Copy-Item "$root\build\unsigned.apk" "$root\build\aligned.apk"
 & "$bt\zipalign.exe" -f 4 "$root\build\aligned.apk" "$root\build\aligned2.apk"
