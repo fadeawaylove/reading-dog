@@ -10,6 +10,7 @@ import java.util.Locale;
 final class UpdateRelease {
     static final String PROJECT="https://github.com/fadeawaylove/reading-dog";
     static final String API="https://api.github.com/repos/fadeawaylove/reading-dog/releases/latest";
+    static final String BACKUP="http://magpie.fadeaway.ltd/reading-dog";
     static final long MAX_APK=100L*1024*1024;
     final String version,notes,date,name,url,checksumUrl,digest;
     final long size;
@@ -34,7 +35,8 @@ final class UpdateRelease {
         if(size<=0||size>MAX_APK)throw new IOException("安装包大小异常");
         url=apk.getString("browser_download_url");
         requireAssetUrl(url);
-        if(!sums.isEmpty())requireAssetUrl(sums);
+        if(isBackupUrl(url)&&!url.equals(backupUrl(name)))throw new IOException("备用安装包版本不符");
+        if(!sums.isEmpty()){requireAssetUrl(sums);if(isBackupUrl(sums)&&!sums.equals(backupUrl("SHA256SUMS.txt")))throw new IOException("备用校验地址版本不符");}
         checksumUrl=sums;
         String hash=apk.optString("digest","").toLowerCase(Locale.ROOT);
         digest=hash.matches("sha256:[0-9a-f]{64}")?hash.substring(7):"";
@@ -42,9 +44,18 @@ final class UpdateRelease {
     }
 
     static void requireAssetUrl(String url)throws Exception {
+        if(isBackupUrl(url)&&!url.endsWith("/latest.json"))return;
         URI u=new URI(url);
         if(!"https".equals(u.getScheme())||!"github.com".equals(u.getHost())||u.getUserInfo()!=null||u.getPort()!=-1||u.getQuery()!=null||u.getFragment()!=null||!u.getPath().startsWith("/fadeawaylove/reading-dog/releases/download/"))
             throw new IOException("更新附件地址无效");
+    }
+
+    String backupUrl(String file){return BACKUP+"/"+version+"/"+file;}
+
+    static boolean isBackupUrl(String address){
+        if(!address.startsWith(BACKUP+"/"))return false;
+        String path=address.substring(BACKUP.length());
+        return path.equals("/latest.json")||path.matches("/[0-9]{1,9}(?:\\.[0-9]{1,9}){0,3}/(?:reading-dog-[0-9]{1,9}(?:\\.[0-9]{1,9}){0,3}\\.apk|SHA256SUMS\\.txt)");
     }
 
     static String normalize(String version)throws IOException {

@@ -42,7 +42,7 @@ class AppUpdater {
         int token=++generation;error="";release=null;state=State.CHECKING;notifyChanged();
         io.execute(()->{
             try{
-                UpdateRelease next=new UpdateRelease(new JSONObject(readText(UpdateRelease.API,1024*1024,token)));
+                UpdateRelease next=readRelease(token);
                 boolean newer=UpdateRelease.compare(next.version,currentVersion)>0;
                 boolean ready=false;
                 if(newer&&apk(context).isFile()){
@@ -63,18 +63,13 @@ class AppUpdater {
             try{
                 if(!folder(context).isDirectory()&&!folder(context).mkdirs())throw new IOException("无法创建下载目录");
                 String digest=expectedDigest(target,token);
-                HttpURLConnection c=open(target.url,token);
-                try(InputStream in=c.getInputStream();OutputStream out=new FileOutputStream(partial)){
-                    byte[] buffer=new byte[16384];long total=0,last=0;int n;
-                    while((n=in.read(buffer))!=-1){
-                        requireActive(token);total+=n;
-                        if(total>target.size)throw new IOException("安装包大小不符，请重新下载");
-                        out.write(buffer,0,n);
-                        long now=SystemClock.uptimeMillis();
-                        if(now-last>150){last=now;final long bytes=total;publish(token,()->received=bytes);}
-                    }
-                    if(total!=target.size)throw new IOException("安装包下载不完整，请重试");
-                }finally{c.disconnect();}
+                try{downloadFile(target.url,target,partial,token);}
+                catch(IOException primary){
+                    requireActive(token);
+                    if(UpdateRelease.isBackupUrl(target.url))throw primary;
+                    publish(token,()->received=0);
+                    downloadFile(target.backupUrl(target.name),target,partial,token);
+                }
                 publish(token,()->{received=target.size;state=State.VERIFYING;});
                 verify(partial,target,digest);requireActive(token);
                 if(apk(context).exists()&&!apk(context).delete())throw new IOException("无法替换旧安装包");
@@ -84,6 +79,29 @@ class AppUpdater {
         });
     }
 
+    // Fallback truncates the partial file and restarts the same version from byte zero.
+    void downloadFile(String address,UpdateRelease target,File partial,int token)throws Exception {
+        HttpURLConnection c=open(address,token);
+        try(InputStream in=c.getInputStream();OutputStream out=new FileOutputStream(partial)){
+            byte[] buffer=new byte[16384];long total=0,last=0;int n;
+            while((n=in.read(buffer))!=-1){
+                requireActive(token);total+=n;
+                if(total>target.size)throw new IOException("安装包大小不符，请重新下载");
+                out.write(buffer,0,n);
+                long now=SystemClock.uptimeMillis();
+                if(now-last>150){last=now;final long bytes=total;publish(token,()->received=bytes);}
+            }
+            if(total!=target.size)throw new IOException("安装包下载不完整，请重试");
+        }finally{c.disconnect();}
+    }
+
+    UpdateRelease readRelease(int token)throws Exception {
+        String metadata;
+        try{metadata=readText(UpdateRelease.API,1024*1024,token);}
+        catch(IOException primary){requireActive(token);metadata=readText(UpdateRelease.BACKUP+"/latest.json",1024*1024,token);}
+        return new UpdateRelease(new JSONObject(metadata));
+    }
+
     void cancel(){
         if(!busy())return;
         ++generation;HttpURLConnection c=connection;if(c!=null)ioDisconnect(c);
@@ -91,16 +109,25 @@ class AppUpdater {
     }
     private void ioDisconnect(HttpURLConnection c){new Thread(c::disconnect,"update-cancel").start();}
     private void requireActive(int token)throws IOException {if(generation!=token)throw new IOException("已取消");}
-    String expectedDigest(UpdateRelease r,int token)throws Exception {return r.digest.isEmpty()?r.checksum(readText(r.checksumUrl,64*1024,token)):r.digest;}
+    String expectedDigest(UpdateRelease r,int token)throws Exception {
+        if(!r.digest.isEmpty())return r.digest;
+        String sums;
+        try{sums=readText(r.checksumUrl,64*1024,token);}
+        catch(IOException primary){
+            requireActive(token);if(UpdateRelease.isBackupUrl(r.checksumUrl))throw primary;
+            sums=readText(r.backupUrl("SHA256SUMS.txt"),64*1024,token);
+        }
+        return r.checksum(sums);
+    }
 
     HttpURLConnection open(String address,int token)throws Exception {
         URL url=new URL(address);
         for(int i=0;i<6;i++){
             requireActive(token);
             String host=url.getHost();
-            if(!"https".equals(url.getProtocol())||url.getUserInfo()!=null||!(host.equals("api.github.com")||host.equals("github.com")||host.equals("release-assets.githubusercontent.com")||host.equals("objects.githubusercontent.com")))throw new IOException("更新服务地址无效");
+            if(!UpdateRelease.isBackupUrl(url.toString())&&(!"https".equals(url.getProtocol())||url.getUserInfo()!=null||url.getPort()!=-1||!(host.equals("api.github.com")||host.equals("github.com")||host.equals("release-assets.githubusercontent.com")||host.equals("objects.githubusercontent.com"))))throw new IOException("更新服务地址无效");
             HttpURLConnection c=(HttpURLConnection)url.openConnection();connection=c;
-            c.setConnectTimeout(15000);c.setReadTimeout(20000);c.setInstanceFollowRedirects(false);
+            c.setConnectTimeout(5000);c.setReadTimeout(5000);c.setInstanceFollowRedirects(false);
             c.setRequestProperty("User-Agent","ReadingDog/"+currentVersion);c.setRequestProperty("Accept",host.equals("api.github.com")?"application/vnd.github+json":"application/octet-stream");
             int code;
             try{code=c.getResponseCode();}catch(Exception e){c.disconnect();throw e;}

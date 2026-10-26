@@ -27,10 +27,10 @@ public class UpdateChecks extends Instrumentation {
     String hash(byte[] data)throws Exception {StringBuilder b=new StringBuilder();for(byte value:MessageDigest.getInstance("SHA-256").digest(data))b.append(String.format(Locale.ROOT,"%02x",value&255));return b.toString();}
     JSONObject fixture(byte[] bytes)throws Exception {String future=new String(asset("future-version.txt"),"UTF-8").trim();return new JSONObject().put("tag_name","v"+future).put("draft",false).put("prerelease",false).put("published_at","2026-10-26T00:00:00Z").put("body","测试夹具 · 不是真实发布\n\n- 新增检查更新\n- 验证下载、校验与安装入口\n\n"+String.join("\n",Collections.nCopies(12,"这是一条较长的更新说明，用于检查滚动区域和按钮可见性。"))).put("assets",new JSONArray().put(new JSONObject().put("name","reading-dog-"+future+".apk").put("size",bytes.length).put("digest","sha256:"+hash(bytes)).put("browser_download_url",UpdateRelease.PROJECT+"/releases/download/v"+future+"/reading-dog-"+future+".apk")));}
     static class FixtureUpdater extends AppUpdater {
-        byte[] payload;String metadata;boolean networkError,slow;
+        byte[] payload;String metadata;boolean networkError,slow,primaryTimeout,backupError;int backupCalls;
         FixtureUpdater(Context c,byte[] bytes,String json){super(c);payload=bytes;metadata=json;}
-        @Override String readText(String url,int limit,int token)throws Exception {if(networkError)throw new UnknownHostException();return metadata;}
-        @Override HttpURLConnection open(String address,int token)throws Exception {if(networkError)throw new UnknownHostException();return new HttpURLConnection(new URL(address)){
+        @Override String readText(String url,int limit,int token)throws Exception {if(networkError)throw new UnknownHostException();if(primaryTimeout&&!UpdateRelease.isBackupUrl(url))throw new SocketTimeoutException();if(UpdateRelease.isBackupUrl(url)){backupCalls++;if(backupError)throw new SocketTimeoutException();}return metadata;}
+        @Override HttpURLConnection open(String address,int token)throws Exception {if(networkError)throw new UnknownHostException();if(primaryTimeout&&!UpdateRelease.isBackupUrl(address))throw new SocketTimeoutException();if(UpdateRelease.isBackupUrl(address)){backupCalls++;if(backupError)throw new SocketTimeoutException();}return new HttpURLConnection(new URL(address)){
             public void disconnect(){}public boolean usingProxy(){return false;}public void connect(){}
             public InputStream getInputStream(){return new ByteArrayInputStream(payload){@Override public synchronized int read(byte[] b,int off,int len){if(slow)SystemClock.sleep(100);return super.read(b,off,Math.min(4096,len));}};}
         };}
@@ -59,6 +59,20 @@ public class UpdateChecks extends Instrumentation {
             ui(()->about.action.performClick());waitUntil(()->real.state!=AppUpdater.State.CHECKING,"live check");ok(real.state==AppUpdater.State.LATEST,"installed version reports latest from live API");shot("03-latest-live");
             fake=new FixtureUpdater(getTargetContext(),nextApk,json.toString());final FixtureUpdater test=fake;
             ui(()->{real.remove(about);about.hideDetails();about.updater=test;about.details=true;test.observe(about);test.check();});waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"fixture available");shot("04-available-fixture");
+            ok(android.security.NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted("magpie.fadeaway.ltd"),"backup domain permits HTTP");
+            ok(!android.security.NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted("example.com"),"other domains reject HTTP");
+            rejects(()->UpdateRelease.requireAssetUrl(UpdateRelease.BACKUP+"/../private.apk"),"reject backup traversal");
+            rejects(()->UpdateRelease.requireAssetUrl(UpdateRelease.BACKUP+"/0.17/reading-dog-0.17.apk?redirect=evil"),"reject backup query injection");
+            HttpURLConnection backup=real.open(UpdateRelease.BACKUP+"/latest.json",real.generation);
+            ok(backup.getConnectTimeout()==5000&&backup.getReadTimeout()==5000,"five-second connect and stalled-read timeouts");backup.disconnect();
+            UpdateRelease backupRelease=new UpdateRelease(new JSONObject(real.readText(UpdateRelease.BACKUP+"/latest.json",1024*1024,real.generation)));
+            File mirror=new File(output,"mirror.apk");real.downloadFile(backupRelease.url,backupRelease,mirror,real.generation);
+            try(InputStream in=new FileInputStream(mirror);ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);ok(hash(out.toByteArray()).equals(real.expectedDigest(backupRelease,real.generation)),"real backup APK downloaded and checksum matched");}mirror.delete();
+            test.primaryTimeout=true;test.backupCalls=0;
+            ui(()->test.check());waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"metadata fallback");ok(test.backupCalls==1,"metadata timeout falls back once");
+            test.backupCalls=0;ui(()->test.download());waitUntil(()->test.state==AppUpdater.State.READY,"APK fallback");ok(test.backupCalls==1,"GitHub timeout falls back to verified same-version APK");AppUpdater.apk(getTargetContext()).delete();
+            test.backupError=true;ui(()->test.download());waitUntil(()->test.state==AppUpdater.State.DOWNLOAD_FAILED,"both hosts unavailable");ok(!AppUpdater.apk(getTargetContext()).exists(),"both hosts failing never exposes installable APK");
+            test.backupError=false;test.primaryTimeout=false;
             test.slow=true;ui(()->test.download());waitUntil(()->test.received>0,"progress");shot("05-downloading-fixture");ui(()->{test.cancel();about.hideDetails();});Thread.sleep(600);ok(test.state==AppUpdater.State.AVAILABLE&&!AppUpdater.apk(getTargetContext()).exists(),"cancel removes partial and suppresses stale completion");
             test.networkError=true;ui(()->{about.details=true;test.check();});waitUntil(()->test.state==AppUpdater.State.CHECK_FAILED,"offline check");shot("06-network-error-fixture");ok(test.error.contains("网络"),"network failure has actionable message");test.networkError=false;
             ui(()->test.check());waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"retry check");

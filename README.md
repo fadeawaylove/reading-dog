@@ -6,6 +6,8 @@ Android 原生 Java 小说阅读器，提供搜索、书架、正文分页、四
 
 正式安装包见 [Releases](https://github.com/fadeawaylove/reading-dog/releases/latest)，沿用既有签名，支持覆盖升级。
 
+v0.18 起，GitHub 连接超时或读取停滞 5 秒后会自动尝试备用下载。也可使用[备用下载](http://magpie.fadeaway.ltd/reading-dog/)。发布时将同一安装包上传到两个地址，流程见 [发布说明](deploy/README.md)。
+
 ## 构建
 
 在 Windows PowerShell 7 中运行：
