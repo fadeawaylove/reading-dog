@@ -6,30 +6,30 @@ public final class ParityChecks extends TurnChecks {
  void noneDraws()throws Exception{select(PageTurnMode.NONE);page(2);SystemClock.sleep(500);final int[] draws={0};ViewTreeObserver.OnDrawListener listener=()->draws[0]++;ui(()->reader.surface.getViewTreeObserver().addOnDrawListener(listener));int before=reader.anchor;float w=reader.surface.getWidth(),h=reader.surface.getHeight();hold(w*.85f,w*.7f,h*.72f);SystemClock.sleep(100);for(int i=0;i<6;i++){final float x=w*(.69f-i*.01f);ui(()->{long t=SystemClock.uptimeMillis();MotionEvent e=MotionEvent.obtain(t,t,MotionEvent.ACTION_MOVE,x,h*.72f,0);reader.surface.dispatchTouchEvent(e);e.recycle();});SystemClock.sleep(45);}int result=draws[0];ui(()->reader.surface.getViewTreeObserver().removeOnDrawListener(listener));cancelHold();record("none_cancel_state",new JSONObject().put("before",before).put("after",reader.anchor).put("page",reader.surface.frame.pageIndex).put("mode",reader.surface.activeMode.key).put("commits",reader.surface.commits).put("cancels",reader.surface.cancels));assertTrue(reader.anchor==before,"NONE drag does not commit");record("none_drag_actual_view_traversals",result);assertTrue(result==0,"NONE unchanged drag must not request draw, actual="+result);}
 
  void pool()throws Exception{
-  select(PageTurnMode.NONE);page(2);waitFor(()->!reader.surface.whitePage,3,"initial page revealed");
+  select(PageTurnMode.NONE);page(2);waitFor(()->!reader.surface.textGap,3,"initial page revealed");
   ReaderPageView previous=reader.surface.pages[0],current=reader.surface.pages[1],next=reader.surface.pages[2];int offset=reader.anchor;
-  noneWhiteTurn(1);
+  noneTextGapTurn(1);
   assertTrue(reader.surface.getChildCount()==3&&reader.surface.pages[1]==next&&reader.surface.pages[0]==current,"next rotates native page objects");
-  noneWhiteTurn(-1);
+  noneTextGapTurn(-1);
   assertTrue(reader.surface.getChildCount()==3&&reader.surface.pages[1]==current&&reader.surface.pages[0]==previous&&reader.surface.pages[2]==next&&reader.anchor==offset,"previous reuses same three objects and original offset");
-  record("three_native_pages_rotate_without_recreation",true);record("none_white_then_target_page",true);
+  record("three_native_pages_rotate_without_recreation",true);record("none_text_gap_then_target_page",true);
  }
- void noneWhiteTurn(int direction)throws Exception{
+ void noneTextGapTurn(int direction)throws Exception{
   final ReaderSurface surface=reader.surface;final int[] requests=new int[2],draws=new int[2],page=new int[2];final boolean[] blank={false,false};final ReaderSurface.Frame[] target={null};final android.graphics.Bitmap[] images=new android.graphics.Bitmap[3];
   try{
    ui(()->{
     requests[0]=surface.sceneRequests;page[0]=surface.frame.pageIndex;surface.turn(direction);
-    target[0]=surface.frame;page[1]=surface.frame.pageIndex;blank[0]=surface.whitePage;
+    target[0]=surface.frame;page[1]=surface.frame.pageIndex;blank[0]=surface.textGap;
     draws[0]=surface.pages[1].contentDraws;
     images[0]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
     surface.draw(new android.graphics.Canvas(images[0]));
-    draws[1]=surface.pages[1].contentDraws;requests[1]=surface.sceneRequests;blank[1]=surface.whitePageScheduled;
+    draws[1]=surface.pages[1].contentDraws;requests[1]=surface.sceneRequests;blank[1]=surface.textGapScheduled;
    });
    assertTrue(page[1]==page[0]+direction,"NONE commits exactly one target page");
-   assertTrue(blank[0]&&blank[1]&&requests[1]>requests[0],"NONE schedules white phase and delayed reveal");
-   assertTrue(draws[1]==draws[0],"white phase does not draw target text");
-   int[] pixels=new int[images[0].getWidth()*images[0].getHeight()];images[0].getPixels(pixels,0,images[0].getWidth(),0,0,images[0].getWidth(),images[0].getHeight());for(int pixel:pixels)assertTrue(pixel==android.graphics.Color.WHITE,"white phase clears entire page");
-   waitFor(()->!surface.whitePage&&!surface.whitePageScheduled,3,"NONE target automatically revealed");
+   assertTrue(blank[0]&&blank[1]&&requests[1]>requests[0],"NONE schedules text gap and delayed reveal");
+   assertTrue(draws[1]==draws[0],"text gap does not draw target text");
+   int[] pixels=new int[images[0].getWidth()*images[0].getHeight()];images[0].getPixels(pixels,0,images[0].getWidth(),0,0,images[0].getWidth(),images[0].getHeight());for(int pixel:pixels)assertTrue(pixel==surface.pages[1].paper,"text gap preserves the page background without text");
+   waitFor(()->!surface.textGap&&!surface.textGapScheduled,3,"NONE target automatically revealed");
    ui(()->{
     images[1]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
     images[2]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
@@ -38,7 +38,7 @@ public final class ParityChecks extends TurnChecks {
    assertTrue(surface.sceneRequests>requests[1],"reveal requests a new scene");
    assertTrue(surface.frame==target[0]&&images[1].sameAs(images[2]),"revealed raster is the committed target page");
    assertTrue(surface.pages[1].contentDraws>draws[1],"reveal draws target content");
-   record("none_white_reveal_"+(direction>0?"forward":"backward"),new JSONObject().put("white_phase_requests",requests[1]-requests[0]).put("total_requests",surface.sceneRequests-requests[0]).put("white_and_target_rasters",true));
+   record("none_text_gap_reveal_"+(direction>0?"forward":"backward"),new JSONObject().put("text_gap_requests",requests[1]-requests[0]).put("total_requests",surface.sceneRequests-requests[0]).put("background_and_target_rasters",true));
   }finally{for(android.graphics.Bitmap image:images)if(image!=null)image.recycle();}
  }
 
