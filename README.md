@@ -2,7 +2,7 @@
 
 Android 原生 Java 小说阅读器，提供搜索、书架、正文分页、四种翻页动画、段评、离线缓存、全书页码和原文位置续读。
 
-源码位于 [android-replica](android-replica/README.md)。v0.15 将日间正文改为纯黑，新增三档文字粗细并保存选择，切换后保持原文阅读位置。
+源码位于 [android-replica](android-replica/README.md)。v0.16 提供带 ± 按钮的文字粗细滑块，按实测步长 10 调节；无动画翻页增加 80 毫秒纯白间隔。
 
 正式安装包见 [Releases](https://github.com/fadeawaylove/reading-dog/releases/latest)，沿用既有签名，支持覆盖升级。
 

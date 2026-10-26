@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.displaychecks"><application android:label="Reader display checks"/><instrumentation android:name="com.example.yuejie.DisplayChecks" android:targetPackage="com.example.yuejie" android:functionalTest="true"/></manifest>

@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.weightchecks"><application android:label="Reader weight step checks"/><instrumentation android:name="com.example.yuejie.WeightStepChecks" android:targetPackage="com.example.yuejie" android:functionalTest="true"/></manifest>
