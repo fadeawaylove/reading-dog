@@ -6,42 +6,26 @@ public final class ParityChecks extends TurnChecks {
  void noneDraws()throws Exception{select(PageTurnMode.NONE);page(2);SystemClock.sleep(500);final int[] draws={0};ViewTreeObserver.OnDrawListener listener=()->draws[0]++;ui(()->reader.surface.getViewTreeObserver().addOnDrawListener(listener));int before=reader.anchor;float w=reader.surface.getWidth(),h=reader.surface.getHeight();hold(w*.85f,w*.7f,h*.72f);SystemClock.sleep(100);for(int i=0;i<6;i++){final float x=w*(.69f-i*.01f);ui(()->{long t=SystemClock.uptimeMillis();MotionEvent e=MotionEvent.obtain(t,t,MotionEvent.ACTION_MOVE,x,h*.72f,0);reader.surface.dispatchTouchEvent(e);e.recycle();});SystemClock.sleep(45);}int result=draws[0];ui(()->reader.surface.getViewTreeObserver().removeOnDrawListener(listener));cancelHold();record("none_cancel_state",new JSONObject().put("before",before).put("after",reader.anchor).put("page",reader.surface.frame.pageIndex).put("mode",reader.surface.activeMode.key).put("commits",reader.surface.commits).put("cancels",reader.surface.cancels));assertTrue(reader.anchor==before,"NONE drag does not commit");record("none_drag_actual_view_traversals",result);assertTrue(result==0,"NONE unchanged drag must not request draw, actual="+result);}
 
  void pool()throws Exception{
-  select(PageTurnMode.NONE);page(2);waitFor(()->!reader.surface.textGap,3,"initial page revealed");
+  select(PageTurnMode.NONE);page(2);
   ReaderPageView previous=reader.surface.pages[0],current=reader.surface.pages[1],next=reader.surface.pages[2];int offset=reader.anchor;
-  noneTextGapTurn(1);
+  noneDirectTurn(1);
   assertTrue(reader.surface.getChildCount()==3&&reader.surface.pages[1]==next&&reader.surface.pages[0]==current,"next rotates native page objects");
-  noneTextGapTurn(-1);
+  noneDirectTurn(-1);
   assertTrue(reader.surface.getChildCount()==3&&reader.surface.pages[1]==current&&reader.surface.pages[0]==previous&&reader.surface.pages[2]==next&&reader.anchor==offset,"previous reuses same three objects and original offset");
-  record("three_native_pages_rotate_without_recreation",true);record("none_text_gap_then_target_page",true);
+  record("three_native_pages_rotate_without_recreation",true);record("none_immediate_target_page",true);
  }
- void noneTextGapTurn(int direction)throws Exception{
-  final ReaderSurface surface=reader.surface;final int[] requests=new int[2],draws=new int[2],page=new int[2];final boolean[] blank={false,false};final ReaderSurface.Frame[] target={null};final android.graphics.Bitmap[] images=new android.graphics.Bitmap[3];
+ void noneDirectTurn(int direction)throws Exception{
+  final ReaderSurface surface=reader.surface;final int[] page=new int[2];final android.graphics.Bitmap[] images=new android.graphics.Bitmap[2];
   try{
-   ui(()->{
-    requests[0]=surface.sceneRequests;page[0]=surface.frame.pageIndex;surface.turn(direction);
-    target[0]=surface.frame;page[1]=surface.frame.pageIndex;blank[0]=surface.textGap;
-    draws[0]=surface.pages[1].contentDraws;
+   ui(()->{page[0]=surface.frame.pageIndex;surface.turn(direction);page[1]=surface.frame.pageIndex;
     images[0]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
-    surface.draw(new android.graphics.Canvas(images[0]));
-    draws[1]=surface.pages[1].contentDraws;requests[1]=surface.sceneRequests;blank[1]=surface.textGapScheduled;
+    images[1]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
+    surface.draw(new android.graphics.Canvas(images[0]));surface.drawFrame(new android.graphics.Canvas(images[1]),surface.frame);
    });
    assertTrue(page[1]==page[0]+direction,"NONE commits exactly one target page");
-   assertTrue(blank[0]&&blank[1]&&requests[1]>requests[0],"NONE schedules text gap and delayed reveal");
-   assertTrue(draws[1]==draws[0],"text gap does not draw target text");
-   int[] pixels=new int[images[0].getWidth()*images[0].getHeight()];images[0].getPixels(pixels,0,images[0].getWidth(),0,0,images[0].getWidth(),images[0].getHeight());for(int pixel:pixels)assertTrue(pixel==surface.pages[1].paper,"text gap preserves the page background without text");
-   waitFor(()->!surface.textGap&&!surface.textGapScheduled,3,"NONE target automatically revealed");
-   ui(()->{
-    images[1]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
-    images[2]=android.graphics.Bitmap.createBitmap(surface.getWidth(),surface.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
-    surface.draw(new android.graphics.Canvas(images[1]));surface.drawFrame(new android.graphics.Canvas(images[2]),target[0]);
-   });
-   assertTrue(surface.sceneRequests>requests[1],"reveal requests a new scene");
-   assertTrue(surface.frame==target[0]&&images[1].sameAs(images[2]),"revealed raster is the committed target page");
-   assertTrue(surface.pages[1].contentDraws>draws[1],"reveal draws target content");
-   record("none_text_gap_reveal_"+(direction>0?"forward":"backward"),new JSONObject().put("text_gap_requests",requests[1]-requests[0]).put("total_requests",surface.sceneRequests-requests[0]).put("background_and_target_rasters",true));
+   assertTrue(images[0].sameAs(images[1]),"first raster is the complete target page without blank phase");
   }finally{for(android.graphics.Bitmap image:images)if(image!=null)image.recycle();}
  }
-
  void slow(float fraction)throws Exception{float w=reader.surface.getWidth(),h=reader.surface.getHeight();ui(()->{long t=SystemClock.uptimeMillis();for(int i=0;i<4;i++){int action=i==0?0:i==3?1:2;float x=i==0?w*.85f:w*(.85f-fraction);MotionEvent e=MotionEvent.obtain(t,t+(i==0?0:i==1?600:i==2?900:1000),action,x,h*.72f,0);reader.surface.dispatchTouchEvent(e);e.recycle();}});waitFor(()->!reader.surface.animating(),3,"slow drag settles");}
  void thresholds()throws Exception{for(PageTurnMode mode:PageTurnMode.values()){select(mode);page(2);int offset=reader.anchor;slow(mode==PageTurnMode.NONE||mode==PageTurnMode.SIMULATION?.30f:.40f);assertTrue(reader.anchor==offset,"below threshold rolls back "+mode);slow(mode==PageTurnMode.NONE?.38f:.68f);assertTrue(reader.surface.frame.pageIndex==3,"above threshold commits once "+mode);page(2);}record("all_modes_slow_commit_and_rollback",true);}
  void freeze()throws Exception{select(PageTurnMode.COVER);page(2);ReaderPageView page=reader.surface.pages[1];String before=page.clock;int battery=reader.battery;hold(reader.width*.85f,reader.width*.42f,reader.height*.72f);ui(()->{reader.battery=battery==100?99:battery+1;reader.surface.invalidate();});assertTrue(before.equals(page.clock)&&reader.surface.pendingVisuals,"asynchronous footer stays frozen during drag");cancelHold();waitFor(()->!reader.surface.animating(),3,"cancel settles");assertTrue(!before.equals(page.clock)&&!reader.surface.pendingVisuals,"deferred footer applies after settlement");ui(()->{reader.battery=battery;reader.surface.invalidate();});record("visual_updates_deferred_during_gesture",true);}

@@ -25,6 +25,11 @@ jobs:
           java-version: '17'
       - name: Install Android SDK
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ''platforms;android-35'' ''build-tools;35.0.0'''
+      - name: Check local e-ink policy and reflection bridge
+        run: |
+          mkdir -p "$RUNNER_TEMP/eink-checks"
+          javac -encoding UTF-8 -d "$RUNNER_TEMP/eink-checks" android-replica/src/com/example/yuejie/EInkSupport.java android-replica/tests/EInkChecks.java
+          java -cp "$RUNNER_TEMP/eink-checks" com.example.yuejie.EInkChecks
       - name: Check version and build APK
         shell: bash
         run: |
