@@ -12,7 +12,8 @@ New-Item "$root\comments-build\dex" -ItemType Directory -Force | Out-Null
 & "$bt\aapt2.exe" link -o "$root\comments-build\unsigned.apk" -I "$sdk\platforms\android-35\android.jar" --manifest "$root\AndroidManifest.xml" "$root\comments-build\compiled\res.zip" -A "$root\assets" --java "$root\comments-build\generated" --min-sdk-version 24 --target-sdk-version 35 --version-code $version.code --version-name $version.name
 $sources = Get-ChildItem "$root\src" -Recurse -Filter *.java | ForEach-Object FullName
 & javac -encoding UTF-8 -source 8 -target 8 -classpath "$sdk\platforms\android-35\android.jar" -d "$root\comments-build\classes" $sources
-& "$bt\d8.bat" --lib "$sdk\platforms\android-35\android.jar" --output "$root\comments-build\dex" (Get-ChildItem "$root\comments-build\classes" -Recurse -Filter *.class | ForEach-Object FullName)
+& jar cf "$root\comments-build\classes.jar" -C "$root\comments-build\classes" .
+& "$bt\d8.bat" --lib "$sdk\platforms\android-35\android.jar" --output "$root\comments-build\dex" "$root\comments-build\classes.jar"
 & jar uf "$root\comments-build\unsigned.apk" -C "$root\comments-build\dex" classes.dex
 Copy-Item "$root\comments-build\unsigned.apk" "$root\comments-build\aligned.apk"
 & "$bt\zipalign.exe" -f 4 "$root\comments-build\aligned.apk" "$root\comments-build\aligned2.apk"

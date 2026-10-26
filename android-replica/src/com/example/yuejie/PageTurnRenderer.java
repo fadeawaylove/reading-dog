@@ -34,9 +34,11 @@ abstract class PageTurnRenderer {
   void prepare(ReaderSurface s,ReaderSurface.Frame current,ReaderSurface.Frame target){front=find(current);next=find(target);}
   void release(){for(int i=0;i<3;i++){if(images[i]!=null)images[i].recycle();images[i]=null;frames[i]=null;}front=next=null;}
   void draw(Canvas canvas,ReaderSurface s,Pages pages){if(front==null||next==null){pages.draw(canvas,s.frame);return;}float w=s.getWidth(),h=s.getHeight(),p=Math.min(1,Math.abs(s.drag)/w);if(p>=.9999f){pages.draw(canvas,s.target);return;}if(p<=.0001f){pages.draw(canvas,s.frame);return;}
-   boolean forward=s.direction>0,top=forward&&s.downY<=h*.5f;float fingerX=s.lastX;
+   boolean forward=s.direction>0,top=s.downY<=h*.5f;float fingerX=s.lastX;
    if(s.settling){float span=s.settleEnd-s.settleStart;float t=span==0?1:(s.drag-s.settleStart)/span;float end=forward?(s.pendingCommit?-w:w):(s.pendingCommit?w:-w);fingerX=s.settleFingerX+(end-s.settleFingerX)*t;}
-   float fingerY=s.lastY;if(!forward||(s.downY>h/3&&s.downY<2*h/3))fingerY=top?1:h-1;
+   // Keep the touch height in the middle band and on backward turns too.
+   // Snapping it to the corner flattens the curl into a cover-like vertical strip.
+   float fingerY=Math.max(1,Math.min(h-1,s.lastY));
    geometry.update(w,h,fingerX,fingerY,top);CurlGeometry g=geometry;Bitmap turning=forward?front:next,under=forward?next:front;
    canvas.drawBitmap(under,0,0,bitmapPaint);canvas.save();if(android.os.Build.VERSION.SDK_INT>=26)canvas.clipOutPath(g.fold);else canvas.clipPath(g.fold,Region.Op.DIFFERENCE);canvas.drawBitmap(turning,0,0,bitmapPaint);canvas.restore();
    float length=(float)Math.hypot(w,h);float angle=(float)Math.toDegrees(Math.atan2(g.control1.x-w,g.control2.y-g.cornerY));

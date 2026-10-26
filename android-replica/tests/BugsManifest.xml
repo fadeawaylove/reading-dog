@@ -1,0 +1,2 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.bugchecks"><uses-permission android:name="android.permission.INTERNET"/><application android:label="Global pages checks"/><instrumentation android:name="com.example.yuejie.ReaderBugChecks" android:targetPackage="com.example.yuejie" android:functionalTest="true"/><instrumentation android:name="com.example.yuejie.ParityChecks" android:targetPackage="com.example.yuejie" android:functionalTest="true"/></manifest>
+

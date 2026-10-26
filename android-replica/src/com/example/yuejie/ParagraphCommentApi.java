@@ -5,7 +5,7 @@ final class ParagraphCommentApi {
  final NovelApi api;final LocalLibrary library;final CommentStore cache;
  ParagraphCommentApi(Context c,LocalLibrary l){this(c,l,NovelApi::http);}
  ParagraphCommentApi(Context c,LocalLibrary l,NovelApi.Transport transport){api=new NovelApi(c,l,transport);library=l;cache=new CommentStore(c);}
- static String key(String kind,String book,String chapter,String version,String para,String cursor){return kind+":"+book+":"+chapter+":"+version+":"+para+":"+cursor;}
+ static String key(String kind,String book,String chapter,String version,String para,String cursor){return (kind.equals("page")?"page-v2":kind)+":"+book+":"+chapter+":"+version+":"+para+":"+cursor;}
  JSONObject request(String path,JSONObject body)throws Exception{JSONObject p=api.profile("content");try{return request(path,body,p);}catch(NovelApi.EmptyResponse failure){if(!api.refreshContentProfile(p))throw failure;return request(path,body,api.profile("content"));}}
  JSONObject request(String path,JSONObject body,JSONObject p)throws Exception{
   Map<String,String> defaults=new HashMap<>();JSONArray a=p.getJSONArray("query_defaults");for(int i=0;i<a.length();i++){JSONArray v=a.getJSONArray(i);defaults.put(v.getString(0),v.getString(1));}
@@ -22,10 +22,23 @@ final class ParagraphCommentApi {
  // Preserve all other whitespace and characters so a different paragraph is still rejected.
  static boolean sameParagraph(String left,String right){return withoutTerminators(left).equals(withoutTerminators(right));}
  static String withoutTerminators(String text){int end=text.length();while(end>0&&(text.charAt(end-1)=='\n'||text.charAt(end-1)=='\r'))end--;return text.substring(0,end);}
+ void validateParagraph(String book,String chapter,String version,String para,String expected)throws Exception{
+  CommentStore.Entry entry=cache.get(key("mapping",book,chapter,"","",""));JSONObject current=library.chapter(book,chapter);
+  if(entry!=null&&current!=null&&version.equals(entry.value.optString("item_version"))&&current.optString("text").equals(entry.value.optString("text"))){
+   JSONArray paragraphs=entry.value.optJSONArray("paragraph_meta");if(paragraphs!=null)for(int i=0;i<paragraphs.length();i++){JSONObject p=paragraphs.getJSONObject(i);if(para.equals(p.optString("id"))&&sameParagraph(expected,p.optString("text")))return;}
+  }
+  throw new IOException("段落与当前章节映射不一致，请刷新章节");
+ }
+ // The version in a comment is its creation version, not the requested reading version.
+ // The server carries historical comments forward; scope them by book/chapter/paragraph.
+ static boolean belongsToParagraph(JSONObject common,JSONObject expand,String book,String chapter,int pid){
+  JSONObject pos=expand.optJSONObject("comment_pos");return book.equals(expand.optString("book_id"))&&chapter.equals(common.optString("group_id"))&&pos!=null&&pos.optInt("start_para_index",-1)==pid&&pos.optInt("end_para_index",-1)==pid;
+ }
  JSONObject comments(String book,String chapter,String version,String para,String cursor,String expected)throws Exception{
+  validateParagraph(book,chapter,version,para,expected);
   int pid=Integer.parseInt(para);JSONObject business=new JSONObject().put("book_id",book).put("item_version",version).put("para_index",pid);JSONObject body=new JSONObject().put("business_param",business).put("chapter_id",chapter).put("comment_source",2).put("comment_type",1).put("count",20).put("group_type",15).put("sort",0);if(!cursor.isEmpty())body.put("cursor",cursor);
-  JSONObject raw=request("/novel/commentapi/comment/list/"+chapter+"/v1",body),info=raw.getJSONObject("common_list_info");JSONArray data=raw.optJSONArray("data_list"),items=new JSONArray();String text=raw.optJSONObject("extra")==null?"":raw.getJSONObject("extra").optString("para_content");if(!text.isEmpty()&&!sameParagraph(text,expected))throw new IOException("段落内容与当前正文不一致，请刷新章节");
-  if(data!=null)for(int i=0;i<data.length();i++){JSONObject comment=data.getJSONObject(i).getJSONObject("comment"),common=comment.getJSONObject("common"),expand=comment.getJSONObject("expand"),pos=expand.optJSONObject("comment_pos");if(!version.equals(expand.optString("item_version"))||!book.equals(expand.optString("book_id"))||!chapter.equals(common.optString("group_id"))||!sameParagraph(expected,expand.optString("para_src_content"))||pos==null||pos.optInt("start_para_index",-1)!=pid||pos.optInt("end_para_index",-1)!=pid)continue;
+  JSONObject raw=request("/novel/commentapi/comment/list/"+chapter+"/v1",body),info=raw.getJSONObject("common_list_info");JSONArray data=raw.optJSONArray("data_list"),items=new JSONArray();
+  if(data!=null)for(int i=0;i<data.length();i++){JSONObject comment=data.getJSONObject(i).getJSONObject("comment"),common=comment.getJSONObject("common"),expand=comment.getJSONObject("expand");if(!belongsToParagraph(common,expand,book,chapter,pid))continue;
    JSONObject user=common.getJSONObject("user_info").getJSONObject("base_info"),content=common.getJSONObject("content"),stat=comment.optJSONObject("stat");JSONArray images=new JSONArray();JSONObject container=content.optJSONObject("image_data_list");JSONArray list=container==null?null:container.optJSONArray("image_data");if(list!=null)for(int j=0;j<list.length();j++){JSONObject image=list.getJSONObject(j);String url=secure(image.optString("web_uri"));if(url.startsWith("https://"))images.put(new JSONObject().put("url",url).put("width",image.optInt("width")).put("height",image.optInt("height")));}
    items.put(new JSONObject().put("id",comment.getString("comment_id")).put("name",user.optString("user_name","读者")).put("avatar",secure(user.optString("user_avatar"))).put("text",content.optString("text")).put("images",images).put("likes",stat==null?0:stat.optLong("digg_count")));
   }
