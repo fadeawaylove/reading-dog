@@ -1,9 +1,21 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
+        <item name="android:textColorPrimary">#000000</item>
+        <item name="android:textColorSecondary">#000000</item>
+        <item name="android:textColorTertiary">#000000</item>
+        <item name="android:textColorHint">#000000</item>
+        <item name="android:alertDialogTheme">@style/BlackTextDialog</item>
         <item name="android:colorAccent">#3E624F</item>
         <item name="android:navigationBarColor">#F8F7F2</item>
         <item name="android:statusBarColor">#F8F7F2</item>
         <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <style name="BlackTextDialog" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:textColorPrimary">#000000</item>
+        <item name="android:textColorSecondary">#000000</item>
+        <item name="android:textColorTertiary">#000000</item>
+        <item name="android:textColorHint">#000000</item>
+        <item name="android:colorAccent">#000000</item>
     </style>
 </resources>

@@ -1,33 +1,38 @@
 package com.example.yuejie;
-import android.graphics.*;import android.text.*;import android.text.style.*;import java.util.*;
-/** Immutable original-text ranges. Display paragraph separators never change persisted offsets. */
+import android.graphics.*;import android.text.TextPaint;import java.util.*;
+/** Immutable original offsets and shared geometry for pagination, drawing and hit testing. */
 final class ReaderPaginator {
- static final class Page {final int start,end;final boolean first;final List<Fragment> fragments;Page(int a,int b,boolean f,List<Fragment> lines){start=a;end=b;first=f;fragments=Collections.unmodifiableList(lines);}}
- static final class Fragment {final StaticLayout layout;final int firstLine,lastLine;final float y;final int paragraphStart,paragraphEnd;Fragment(StaticLayout l,int first,int last,float top,int start,int end){layout=l;firstLine=first;lastLine=last;y=top;paragraphStart=start;paragraphEnd=end;}}
- final boolean comments;final float density;final float bubbleWidth;final String text,title;final List<Page> pages=new ArrayList<>();final TextPaint paint=new TextPaint(3),titlePaint=new TextPaint(3);final float left,top,bottom,paragraphGap;final int width,height;final StaticLayout heading;final float titleHeight;
- ReaderPaginator(String text,String title,int width,int height,float density,float scaled,ReaderSettings settings){this.text=text;this.title=title;this.density=density;bubbleWidth=(settings.font<=19?24:settings.font<=29?26:30)*density;comments=settings.comments;this.width=width;this.height=height;top=48*density;bottom=height-38*density;paragraphGap=10*density;
- paint.setTextSize(settings.font*scaled);settings.configureBodyPaint(paint);paint.setColor(settings.ink());paint.setLetterSpacing(0);titlePaint.setTypeface(Typeface.create("sans-serif-medium",0));titlePaint.setTextSize((settings.font+3)*scaled);titlePaint.setColor(settings.ink());int maxWidth=Math.max(1,(int)(width-40*density));float cell=paint.measureText("汉");int columns=cell>0?(int)Math.floor(maxWidth/cell):0;int available=columns>0?Math.min(maxWidth,(int)Math.ceil(columns*cell)):maxWidth;left=(width-available)/2f;heading=StaticLayout.Builder.obtain(title,0,title.length(),titlePaint,available).setIncludePad(false).setLineSpacing(0,1.15f).build();titleHeight=heading.getHeight()+25*density;paginate(available,settings.lineHeight(),density);
+ static final class Page {final int start,end;final boolean first;final List<Fragment> fragments;Page(int a,int b,boolean f,List<Fragment> parts){start=a;end=b;first=f;fragments=Collections.unmodifiableList(new ArrayList<>(parts));}}
+ static final class Fragment {final ReaderTextLayout layout;final int firstLine,lastLine;final float y;final int paragraphStart,paragraphEnd;Fragment(ReaderTextLayout l,int first,int last,float y,int start,int end){layout=l;firstLine=first;lastLine=last;this.y=y;paragraphStart=start;paragraphEnd=end;}}
+ final boolean comments;final float density,bubbleWidth;final String text,title;final List<Page> pages;final Set<Integer> commentParagraphs;
+ final TextPaint paint=new TextPaint(),titlePaint=new TextPaint();final float left,top,bottom,paragraphGap,lineSpace;final int width,height;final ReaderTextLayout heading;final float titleHeight;
+ ReaderPaginator(String text,String title,int width,int height,float density,float scaled,ReaderSettings settings){this(text,title,width,height,density,scaled,settings,Collections.emptyMap());}
+ ReaderPaginator(String text,String title,int width,int height,float density,float scaled,ReaderSettings settings,Map<Integer,Long> counts){
+  this.text=text;this.title=title;this.width=width;this.height=height;this.density=density;comments=settings.comments;paint.setAntiAlias(true);titlePaint.setAntiAlias(true);
+  Set<Integer> active=new HashSet<>();if(comments)for(Map.Entry<Integer,Long> e:counts.entrySet())if(e.getValue()!=null&&e.getValue()>0)active.add(e.getKey());commentParagraphs=Collections.unmodifiableSet(active);
+  left=24*density;top=30*density;bottom=height-37*density;paragraphGap=(settings.spacing==2?26:20)*density;bubbleWidth=(settings.font<=19?24:settings.font<=29?26:30)*density;
+  paint.setTextSize(settings.font*scaled);settings.configureBodyPaint(paint);paint.setColor(settings.ink());paint.setLetterSpacing(0);lineSpace=Math.round(paint.getTextSize()*new double[]{.65,.8,1}[Math.max(0,Math.min(2,settings.spacing))]);
+  titlePaint.setTypeface(paint.getTypeface());titlePaint.setFakeBoldText(true);titlePaint.setColor(settings.ink());int increment=settings.font<20?4:settings.font<25?3:settings.font<30?2:1;titlePaint.setTextSize(ReaderTextLayout.headingSize(paint.getTextSize(),(settings.font+increment)*scaled,density));
+  int available=Math.max(1,Math.round(width-2*left));heading=new ReaderTextLayout(title,titlePaint,available,titlePaint.getTextSize()*.5f,true,0);titleHeight=heading.lines.isEmpty()?0:heading.lines.get(heading.lines.size()-1).bottom+paragraphGap;pages=Collections.unmodifiableList(paginate(available));
  }
- StaticLayout paragraph(String value,int width,float factor){SpannableString span=new SpannableString(value);span.setSpan(new LeadingMarginSpan.Standard(Math.round(paint.getTextSize()*2),0),0,span.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);final int lineHeight=(int)Math.ceil(paint.getTextSize()*factor);span.setSpan(new LineHeightSpan(){public void chooseHeight(CharSequence t,int start,int end,int sv,int lv,Paint.FontMetricsInt fm){int old=fm.descent-fm.ascent;fm.descent=old==0?0:(int)Math.ceil((double)fm.descent*lineHeight/old);fm.ascent=fm.descent-lineHeight;fm.top=fm.ascent;fm.bottom=fm.descent;}},0,span.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);if(comments&&value.length()>0){final int end=value.length(),start=value.offsetByCodePoints(end,-1);span.setSpan(new ReplacementSpan(){public int getSize(Paint p,CharSequence t,int a,int b,Paint.FontMetricsInt fm){return (int)Math.ceil(p.measureText(t,a,b)+bubbleWidth+2*density);}public void draw(Canvas c,CharSequence t,int a,int b,float x,int top,int y,int bottom,Paint p){c.drawText(t,a,b,x,y,p);}},start,end,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);}return StaticLayout.Builder.obtain(span,0,span.length(),paint,width).setIncludePad(false).setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY).setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE).build();}
- void paginate(int available,float factor,float density){List<Fragment> fragments=new ArrayList<>();float y=top+titleHeight;int pageStart=0,pos=0;boolean first=true;
- while(pos<text.length()){
- int end=text.indexOf("\n\n",pos);if(end<0)end=text.length();int next=end;while(next<text.length()&&text.charAt(next)=='\n')next++;String value=text.substring(pos,end);
- if(value.length()==0){pos=Math.max(pos+1,next);continue;}StaticLayout layout=paragraph(value,available,factor);int line=0;
- while(line<layout.getLineCount()){
- int last=line;float room=bottom-y;while(last<layout.getLineCount()&&layout.getLineBottom(last)-layout.getLineTop(line)+(last==layout.getLineCount()-1?commentBelow(layout):0)<=room)last++;
- if(last==line){if(!fragments.isEmpty()||first){int split=pos+layout.getLineStart(line);pages.add(new Page(pageStart,split,first,new ArrayList<>(fragments)));pageStart=split;first=false;fragments.clear();y=top;continue;}last=line+1;}
- fragments.add(new Fragment(layout,line,last,y,pos,end));y+=layout.getLineBottom(last-1)-layout.getLineTop(line);line=last;
- if(line<layout.getLineCount()){int split=pos+layout.getLineStart(line);pages.add(new Page(pageStart,split,first,new ArrayList<>(fragments)));pageStart=split;first=false;fragments.clear();y=top;}
+ ReaderTextLayout paragraph(String value,int width,float ignored){return new ReaderTextLayout(value,paint,width,lineSpace,false,0);}
+ private List<Page> paginate(int available){
+  List<Page> result=new ArrayList<>();List<Fragment> fragments=new ArrayList<>();float y=top+titleHeight;int pageStart=0,pos=0;boolean first=true;
+  while(pos<text.length()){
+   int end=text.indexOf("\n\n",pos);if(end<0)end=text.length();int next=end;while(next<text.length()&&text.charAt(next)=='\n')next++;if(end==pos){pos=Math.max(pos+1,next);continue;}
+   ReaderTextLayout layout=new ReaderTextLayout(text.substring(pos,end),paint,available,lineSpace,false,commentParagraphs.contains(pos)?bubbleWidth+4*density:0);int line=0;
+   while(line<layout.getLineCount()){
+    int last=line;float room=bottom-y;while(last<layout.getLineCount()&&layout.getLineBottom(last)-layout.lineSpace/2-layout.getLineTop(line)<=room+.001f)last++;
+    if(last==line){if(!fragments.isEmpty()||first){int split=pos+layout.getLineStart(line);result.add(new Page(pageStart,split,first,fragments));pageStart=split;first=false;fragments.clear();y=top;continue;}last=line+1;}
+    fragments.add(new Fragment(layout,line,last,y,pos,end));y+=layout.getLineBottom(last-1)-layout.getLineTop(line);line=last;
+    if(line<layout.getLineCount()){int split=pos+layout.getLineStart(line);result.add(new Page(pageStart,split,first,fragments));pageStart=split;first=false;fragments.clear();y=top;}
+   }
+   y+=paragraphGap;pos=next;
+  }
+  if(!fragments.isEmpty()||result.isEmpty())result.add(new Page(pageStart,text.length(),first,fragments));else if(result.get(result.size()-1).end!=text.length()){Page p=result.remove(result.size()-1);result.add(new Page(p.start,text.length(),p.first,p.fragments));}
+  int previous=0;for(Page p:result){if(p.start!=previous||p.end<p.start)throw new IllegalStateException("Non-contiguous pagination");previous=p.end;}if(previous!=text.length())throw new IllegalStateException("Incomplete pagination");return result;
  }
- y+=paragraphGap+commentBelow(layout);pos=next;
- }
- if(!fragments.isEmpty()||pages.isEmpty())pages.add(new Page(pageStart,text.length(),first,new ArrayList<>(fragments)));else if(pages.get(pages.size()-1).end!=text.length()){Page p=pages.remove(pages.size()-1);pages.add(new Page(p.start,text.length(),p.first,p.fragments));}
- // Enforce exact contiguous original-text coverage; no hidden delimiter shifts.
- int previous=0;for(Page p:pages){if(p.start!=previous||p.end<p.start)throw new IllegalStateException("Non-contiguous pagination");previous=p.end;}if(previous!=text.length())throw new IllegalStateException("Incomplete pagination");
- }
- // Reserve the bubble with the final glyph so it wraps with the paragraph, never into a separate gutter.
- float commentBelow(StaticLayout layout){return 0;}
- RectF commentBubble(Fragment f){if(!comments||f.lastLine!=f.layout.getLineCount())return null;int last=f.lastLine-1;float offset=f.layout.getLineTop(f.firstLine);int end=f.layout.getText().length(),glyph=Character.offsetByCodePoints(f.layout.getText(),end,-1);float x=Math.min(width-left-bubbleWidth,left+f.layout.getPrimaryHorizontal(glyph)+paint.measureText(f.layout.getText(),glyph,end)+2*density);Paint.FontMetrics metrics=paint.getFontMetrics();float h=bubbleWidth*18/26;float y=f.y+f.layout.getLineBaseline(last)-offset+(metrics.ascent+metrics.descent)/2-h*8/18;return new RectF(x,y,x+bubbleWidth,y+h);}
+ RectF commentBubble(Fragment f){if(!commentParagraphs.contains(f.paragraphStart)||f.lastLine!=f.layout.getLineCount())return null;ReaderTextLayout.Line line=f.layout.lines.get(f.lastLine-1);float h=bubbleWidth,x=(int)(left+line.right),y=(int)(f.y-f.layout.getLineTop(f.firstLine)+line.top+lineSpace/2+(f.layout.lineHeight-h)/2);return new RectF(x,y,x+bubbleWidth,y+h);}
  int locate(int offset){if(offset==Integer.MAX_VALUE)return pages.size()-1;int result=0;for(int i=0;i<pages.size();i++){if(pages.get(i).start<=offset)result=i;else break;}return result;}
- void draw(Canvas c,int pageIndex,int color){paint.setColor(color);titlePaint.setColor(color);Page page=pages.get(pageIndex);if(page.first){c.save();c.translate(left,top);heading.draw(c);c.restore();}for(Fragment f:page.fragments){int top=f.layout.getLineTop(f.firstLine),bottom=f.layout.getLineBottom(f.lastLine-1);c.save();c.clipRect(left,f.y,width-left,f.y+bottom-top);c.translate(left,f.y-top);f.layout.draw(c);c.restore();}}
+ void draw(Canvas c,int pageIndex,int color){paint.setColor(color);titlePaint.setColor(color);Page page=pages.get(pageIndex);if(page.first){c.save();c.translate(left,top);heading.draw(c);c.restore();}for(Fragment f:page.fragments){float a=f.layout.getLineTop(f.firstLine),b=f.layout.getLineBottom(f.lastLine-1);c.save();c.clipRect(left,f.y,width-left,f.y+b-a);c.translate(left,f.y-a);f.layout.draw(c);c.restore();}}
 }

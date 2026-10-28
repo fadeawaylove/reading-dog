@@ -13,7 +13,7 @@ import static com.example.yuejie.PaperUi.*;
 
 /** Approved warm-paper About and explicit, non-interrupting update flow. */
 public class AboutActivity extends Activity implements AppUpdater.Listener {
-    static final int PAPER=0xfff5f1e8,INK=0xff383a33,MUTED=0xff77796e,GREEN=0xff536951,RULE=0xffdedbd1;
+    static final int PAPER=0xfff5f1e8,INK=0xff000000,MUTED=0xff000000,GREEN=0xff536951,RULE=0xffdedbd1;
     AppUpdater updater;
     TextView action,progressText;
     ProgressBar progress;
@@ -69,13 +69,13 @@ public class AboutActivity extends Activity implements AppUpdater.Listener {
             case LATEST:
                 heading(box,"已是最新版本");description(box,"当前版本 v"+updater.currentVersion+"，安心继续阅读。");box.addView(primary("知道了",this::hideDetails));break;
             case AVAILABLE:
-                box.addView(text(this,"有新版本可用",11,GREEN));gap(box,12);heading(box,"阅读狗 v"+r.version);
+                box.addView(text(this,"有新版本可用",11,INK));gap(box,12);heading(box,"阅读狗 v"+r.version);
                 description(box,"v"+updater.currentVersion+" → v"+r.version+" · "+UpdateRelease.bytes(r.size)+(r.date.length()>=10?"\n"+r.date.substring(0,10):""));
                 View rule=new View(this);rule.setBackgroundColor(RULE);box.addView(rule,new LinearLayout.LayoutParams(-1,d(1)));gap(box,18);TextView sub=text(this,"这次更新",13,INK);sub.setTypeface(null,Typeface.BOLD);box.addView(sub);gap(box,10);
                 ScrollView notes=new ScrollView(this);TextView copy=text(this,r.notes.isEmpty()?"此版本暂无更新说明。":r.notes,13,INK);copy.setLineSpacing(d(5),1);copy.setTextIsSelectable(true);notes.addView(copy);box.addView(notes,new LinearLayout.LayoutParams(-1,d(160)));gap(box,18);
                 box.addView(text(this,"覆盖安装将保留书架与阅读进度。",11,MUTED));gap(box,16);box.addView(primary("下载更新",()->updater.download()));box.addView(secondary("稍后再说",this::hideDetails));break;
             case DOWNLOADING:case VERIFYING:
-                box.addView(text(this,updater.state==AppUpdater.State.DOWNLOADING?"正在下载更新":"正在校验安装包",11,GREEN));gap(box,12);heading(box,"阅读狗 v"+r.version);description(box,"下载完成后，由你确认安装。");
+                box.addView(text(this,updater.state==AppUpdater.State.DOWNLOADING?"正在下载更新":"正在校验安装包",11,INK));gap(box,12);heading(box,"阅读狗 v"+r.version);description(box,"下载完成后，由你确认安装。");
                 progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);progress.setProgressTintList(android.content.res.ColorStateList.valueOf(GREEN));box.addView(progress,new LinearLayout.LayoutParams(-1,d(6)));gap(box,10);progressText=text(this,"",11,MUTED);box.addView(progressText);gap(box,24);
                 description(box,"可继续阅读，返回关于页查看进度。\n若应用被系统关闭，可重新下载。");box.addView(primary("继续阅读",()->{hideDetails();finish();}));box.addView(secondary("取消下载",()->{updater.cancel();hideDetails();}));break;
             case CHECK_FAILED:

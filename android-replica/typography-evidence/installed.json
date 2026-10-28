@@ -1,0 +1,16 @@
+{
+  "apkSha256": "4992216040c20363770818c350d0d17b55ac4db3241745f32a545338b7f5da43",
+  "installedBytesMatch": true,
+  "packagePath": "/data/app/com.example.yuejie-VU-zKAjjgTsnuU0N73nUig==/base.apk",
+  "logicalUserTablesEqual": true,
+  "userTablesCompared": [
+    "books",
+    "progress",
+    "bookmarks"
+  ],
+  "excludedRefreshFields": [
+    "books.json (normal metadata/cover URL refresh)",
+    "progress.updated (test restored original position with normal save)"
+  ],
+  "preferencesIdentical": true
+}

@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.linebreakchecks"><application android:label="Reader line break checks" android:debuggable="true"/><instrumentation android:name="com.example.yuejie.LineBreakChecks" android:targetPackage="com.example.yuejie.linebreakchecks" android:functionalTest="true"/></manifest>

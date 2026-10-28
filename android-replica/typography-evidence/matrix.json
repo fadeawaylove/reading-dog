@@ -1,0 +1,645 @@
+{
+  "success": true,
+  "paragraphs": 5649,
+  "lines": 18588,
+  "breakMismatches": 0,
+  "geometryMismatches": 0,
+  "maxDrift": 0.0001220703125,
+  "pageMismatches": 0,
+  "verticalMismatches": 0,
+  "maxY": 0.0006103515625,
+  "bubbleMismatches": 0,
+  "chapters": [
+    {
+      "font": 16,
+      "family": "reader-body.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 16,
+      "family": "reader-body.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 16,
+      "family": "reader-body.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 30,
+      "family": "reader-body.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 30,
+      "family": "reader-body.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 30,
+      "family": "reader-body.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 16,
+      "family": "reader-serif.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 16,
+      "family": "reader-serif.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 16,
+      "family": "reader-serif.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 30,
+      "family": "reader-serif.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 30,
+      "family": "reader-serif.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 30,
+      "family": "reader-serif.ttf",
+      "expectedPages": 1,
+      "actualPages": 1
+    },
+    {
+      "font": 16,
+      "family": "reader-body.ttf",
+      "expectedPages": 3,
+      "actualPages": 3
+    },
+    {
+      "font": 16,
+      "family": "reader-body.ttf",
+      "expectedPages": 4,
+      "actualPages": 4
+    },
+    {
+      "font": 16,
+      "family": "reader-body.ttf",
+      "expectedPages": 4,
+      "actualPages": 4
+    },
+    {
+      "font": 30,
+      "family": "reader-body.ttf",
+      "expectedPages": 11,
+      "actualPages": 11
+    },
+    {
+      "font": 30,
+      "family": "reader-body.ttf",
+      "expectedPages": 12,
+      "actualPages": 12
+    },
+    {
+      "font": 30,
+      "family": "reader-body.ttf",
+      "expectedPages": 12,
+      "actualPages": 12
+    },
+    {
+      "font": 17,
+      "family": "reader-body.ttf",
+      "expectedPages": 13,
+      "actualPages": 13
+    },
+    {
+      "font": 18,
+      "family": "reader-body.ttf",
+      "expectedPages": 15,
+      "actualPages": 15
+    },
+    {
+      "font": 19,
+      "family": "reader-body.ttf",
+      "expectedPages": 16,
+      "actualPages": 16
+    },
+    {
+      "font": 20,
+      "family": "reader-body.ttf",
+      "expectedPages": 17,
+      "actualPages": 17
+    },
+    {
+      "font": 21,
+      "family": "reader-body.ttf",
+      "expectedPages": 19,
+      "actualPages": 19
+    },
+    {
+      "font": 22,
+      "family": "reader-body.ttf",
+      "expectedPages": 19,
+      "actualPages": 19
+    },
+    {
+      "font": 23,
+      "family": "reader-body.ttf",
+      "expectedPages": 21,
+      "actualPages": 21
+    },
+    {
+      "font": 24,
+      "family": "reader-body.ttf",
+      "expectedPages": 22,
+      "actualPages": 22
+    },
+    {
+      "font": 25,
+      "family": "reader-body.ttf",
+      "expectedPages": 24,
+      "actualPages": 24
+    },
+    {
+      "font": 26,
+      "family": "reader-body.ttf",
+      "expectedPages": 25,
+      "actualPages": 25
+    },
+    {
+      "font": 27,
+      "family": "reader-body.ttf",
+      "expectedPages": 28,
+      "actualPages": 28
+    },
+    {
+      "font": 28,
+      "family": "reader-body.ttf",
+      "expectedPages": 29,
+      "actualPages": 29
+    },
+    {
+      "font": 29,
+      "family": "reader-body.ttf",
+      "expectedPages": 32,
+      "actualPages": 32
+    },
+    {
+      "font": 17,
+      "family": "reader-body.ttf",
+      "expectedPages": 14,
+      "actualPages": 14
+    },
+    {
+      "font": 18,
+      "family": "reader-body.ttf",
+      "expectedPages": 15,
+      "actualPages": 15
+    },
+    {
+      "font": 19,
+      "family": "reader-body.ttf",
+      "expectedPages": 17,
+      "actualPages": 17
+    },
+    {
+      "font": 20,
+      "family": "reader-body.ttf",
+      "expectedPages": 18,
+      "actualPages": 18
+    },
+    {
+      "font": 21,
+      "family": "reader-body.ttf",
+      "expectedPages": 20,
+      "actualPages": 20
+    },
+    {
+      "font": 22,
+      "family": "reader-body.ttf",
+      "expectedPages": 21,
+      "actualPages": 21
+    },
+    {
+      "font": 23,
+      "family": "reader-body.ttf",
+      "expectedPages": 22,
+      "actualPages": 22
+    },
+    {
+      "font": 24,
+      "family": "reader-body.ttf",
+      "expectedPages": 24,
+      "actualPages": 24
+    },
+    {
+      "font": 25,
+      "family": "reader-body.ttf",
+      "expectedPages": 26,
+      "actualPages": 26
+    },
+    {
+      "font": 26,
+      "family": "reader-body.ttf",
+      "expectedPages": 27,
+      "actualPages": 27
+    },
+    {
+      "font": 27,
+      "family": "reader-body.ttf",
+      "expectedPages": 29,
+      "actualPages": 29
+    },
+    {
+      "font": 28,
+      "family": "reader-body.ttf",
+      "expectedPages": 31,
+      "actualPages": 31
+    },
+    {
+      "font": 29,
+      "family": "reader-body.ttf",
+      "expectedPages": 36,
+      "actualPages": 36
+    },
+    {
+      "font": 17,
+      "family": "reader-body.ttf",
+      "expectedPages": 16,
+      "actualPages": 16
+    },
+    {
+      "font": 18,
+      "family": "reader-body.ttf",
+      "expectedPages": 17,
+      "actualPages": 17
+    },
+    {
+      "font": 19,
+      "family": "reader-body.ttf",
+      "expectedPages": 19,
+      "actualPages": 19
+    },
+    {
+      "font": 20,
+      "family": "reader-body.ttf",
+      "expectedPages": 20,
+      "actualPages": 20
+    },
+    {
+      "font": 21,
+      "family": "reader-body.ttf",
+      "expectedPages": 21,
+      "actualPages": 21
+    },
+    {
+      "font": 22,
+      "family": "reader-body.ttf",
+      "expectedPages": 23,
+      "actualPages": 23
+    },
+    {
+      "font": 23,
+      "family": "reader-body.ttf",
+      "expectedPages": 25,
+      "actualPages": 25
+    },
+    {
+      "font": 24,
+      "family": "reader-body.ttf",
+      "expectedPages": 26,
+      "actualPages": 26
+    },
+    {
+      "font": 25,
+      "family": "reader-body.ttf",
+      "expectedPages": 29,
+      "actualPages": 29
+    },
+    {
+      "font": 26,
+      "family": "reader-body.ttf",
+      "expectedPages": 30,
+      "actualPages": 30
+    },
+    {
+      "font": 27,
+      "family": "reader-body.ttf",
+      "expectedPages": 32,
+      "actualPages": 32
+    },
+    {
+      "font": 28,
+      "family": "reader-body.ttf",
+      "expectedPages": 35,
+      "actualPages": 35
+    },
+    {
+      "font": 29,
+      "family": "reader-body.ttf",
+      "expectedPages": 38,
+      "actualPages": 38
+    },
+    {
+      "font": 16,
+      "family": "reader-serif.ttf",
+      "expectedPages": 3,
+      "actualPages": 3
+    },
+    {
+      "font": 16,
+      "family": "reader-serif.ttf",
+      "expectedPages": 4,
+      "actualPages": 4
+    },
+    {
+      "font": 16,
+      "family": "reader-serif.ttf",
+      "expectedPages": 4,
+      "actualPages": 4
+    },
+    {
+      "font": 30,
+      "family": "reader-serif.ttf",
+      "expectedPages": 11,
+      "actualPages": 11
+    },
+    {
+      "font": 30,
+      "family": "reader-serif.ttf",
+      "expectedPages": 12,
+      "actualPages": 12
+    },
+    {
+      "font": 30,
+      "family": "reader-serif.ttf",
+      "expectedPages": 12,
+      "actualPages": 12
+    },
+    {
+      "font": 24,
+      "family": "reader-serif.ttf",
+      "expectedPages": 22,
+      "actualPages": 22
+    },
+    {
+      "font": 24,
+      "family": "reader-serif.ttf",
+      "expectedPages": 24,
+      "actualPages": 24
+    },
+    {
+      "font": 24,
+      "family": "reader-serif.ttf",
+      "expectedPages": 26,
+      "actualPages": 26
+    },
+    {
+      "font": 17,
+      "family": "reader-serif.ttf",
+      "expectedPages": 13,
+      "actualPages": 13
+    },
+    {
+      "font": 18,
+      "family": "reader-serif.ttf",
+      "expectedPages": 15,
+      "actualPages": 15
+    },
+    {
+      "font": 19,
+      "family": "reader-serif.ttf",
+      "expectedPages": 16,
+      "actualPages": 16
+    },
+    {
+      "font": 20,
+      "family": "reader-serif.ttf",
+      "expectedPages": 17,
+      "actualPages": 17
+    },
+    {
+      "font": 21,
+      "family": "reader-serif.ttf",
+      "expectedPages": 19,
+      "actualPages": 19
+    },
+    {
+      "font": 22,
+      "family": "reader-serif.ttf",
+      "expectedPages": 19,
+      "actualPages": 19
+    },
+    {
+      "font": 23,
+      "family": "reader-serif.ttf",
+      "expectedPages": 21,
+      "actualPages": 21
+    },
+    {
+      "font": 24,
+      "family": "reader-serif.ttf",
+      "expectedPages": 22,
+      "actualPages": 22
+    },
+    {
+      "font": 25,
+      "family": "reader-serif.ttf",
+      "expectedPages": 24,
+      "actualPages": 24
+    },
+    {
+      "font": 26,
+      "family": "reader-serif.ttf",
+      "expectedPages": 25,
+      "actualPages": 25
+    },
+    {
+      "font": 27,
+      "family": "reader-serif.ttf",
+      "expectedPages": 28,
+      "actualPages": 28
+    },
+    {
+      "font": 28,
+      "family": "reader-serif.ttf",
+      "expectedPages": 29,
+      "actualPages": 29
+    },
+    {
+      "font": 29,
+      "family": "reader-serif.ttf",
+      "expectedPages": 32,
+      "actualPages": 32
+    },
+    {
+      "font": 17,
+      "family": "reader-serif.ttf",
+      "expectedPages": 14,
+      "actualPages": 14
+    },
+    {
+      "font": 18,
+      "family": "reader-serif.ttf",
+      "expectedPages": 15,
+      "actualPages": 15
+    },
+    {
+      "font": 19,
+      "family": "reader-serif.ttf",
+      "expectedPages": 17,
+      "actualPages": 17
+    },
+    {
+      "font": 20,
+      "family": "reader-serif.ttf",
+      "expectedPages": 18,
+      "actualPages": 18
+    },
+    {
+      "font": 21,
+      "family": "reader-serif.ttf",
+      "expectedPages": 20,
+      "actualPages": 20
+    },
+    {
+      "font": 22,
+      "family": "reader-serif.ttf",
+      "expectedPages": 21,
+      "actualPages": 21
+    },
+    {
+      "font": 23,
+      "family": "reader-serif.ttf",
+      "expectedPages": 22,
+      "actualPages": 22
+    },
+    {
+      "font": 24,
+      "family": "reader-serif.ttf",
+      "expectedPages": 24,
+      "actualPages": 24
+    },
+    {
+      "font": 25,
+      "family": "reader-serif.ttf",
+      "expectedPages": 26,
+      "actualPages": 26
+    },
+    {
+      "font": 26,
+      "family": "reader-serif.ttf",
+      "expectedPages": 27,
+      "actualPages": 27
+    },
+    {
+      "font": 27,
+      "family": "reader-serif.ttf",
+      "expectedPages": 29,
+      "actualPages": 29
+    },
+    {
+      "font": 28,
+      "family": "reader-serif.ttf",
+      "expectedPages": 31,
+      "actualPages": 31
+    },
+    {
+      "font": 29,
+      "family": "reader-serif.ttf",
+      "expectedPages": 36,
+      "actualPages": 36
+    },
+    {
+      "font": 17,
+      "family": "reader-serif.ttf",
+      "expectedPages": 16,
+      "actualPages": 16
+    },
+    {
+      "font": 18,
+      "family": "reader-serif.ttf",
+      "expectedPages": 17,
+      "actualPages": 17
+    },
+    {
+      "font": 19,
+      "family": "reader-serif.ttf",
+      "expectedPages": 19,
+      "actualPages": 19
+    },
+    {
+      "font": 20,
+      "family": "reader-serif.ttf",
+      "expectedPages": 20,
+      "actualPages": 20
+    },
+    {
+      "font": 21,
+      "family": "reader-serif.ttf",
+      "expectedPages": 21,
+      "actualPages": 21
+    },
+    {
+      "font": 22,
+      "family": "reader-serif.ttf",
+      "expectedPages": 23,
+      "actualPages": 23
+    },
+    {
+      "font": 23,
+      "family": "reader-serif.ttf",
+      "expectedPages": 25,
+      "actualPages": 25
+    },
+    {
+      "font": 24,
+      "family": "reader-serif.ttf",
+      "expectedPages": 26,
+      "actualPages": 26
+    },
+    {
+      "font": 25,
+      "family": "reader-serif.ttf",
+      "expectedPages": 29,
+      "actualPages": 29
+    },
+    {
+      "font": 26,
+      "family": "reader-serif.ttf",
+      "expectedPages": 30,
+      "actualPages": 30
+    },
+    {
+      "font": 27,
+      "family": "reader-serif.ttf",
+      "expectedPages": 32,
+      "actualPages": 32
+    },
+    {
+      "font": 28,
+      "family": "reader-serif.ttf",
+      "expectedPages": 35,
+      "actualPages": 35
+    },
+    {
+      "font": 29,
+      "family": "reader-serif.ttf",
+      "expectedPages": 38,
+      "actualPages": 38
+    }
+  ],
+  "failures": []
+}

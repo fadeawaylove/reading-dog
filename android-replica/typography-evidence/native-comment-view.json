@@ -1,0 +1,52 @@
+[
+  {
+    "text": "2",
+    "x": 132,
+    "y": 6,
+    "baseline": 45,
+    "w": 66,
+    "h": 57,
+    "size": 42,
+    "flags": 1281,
+    "weight": 700,
+    "gravity": 17,
+    "padding": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "metrics": {
+      "top": -44.3583984375,
+      "ascent": -38.96484375,
+      "descent": 10.25390625,
+      "bottom": 11.3818359375
+    },
+    "typeface": "android.graphics.Typeface@e6ea56b7"
+  },
+  {
+    "text": "2",
+    "x": 0,
+    "y": 0,
+    "baseline": 49,
+    "w": 78,
+    "h": 78,
+    "size": 27,
+    "flags": 1313,
+    "weight": 400,
+    "gravity": 17,
+    "padding": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "metrics": {
+      "top": -28.51611328125,
+      "ascent": -25.048828125,
+      "descent": 6.591796875,
+      "bottom": 7.31689453125
+    },
+    "typeface": "android.graphics.Typeface@e4cefcb6"
+  }
+]

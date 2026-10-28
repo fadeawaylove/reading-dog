@@ -1,0 +1,38 @@
+[
+  {
+    "sample": "sans-normal-page0",
+    "glyphs": 117,
+    "maxBoundsDifferencePx": 1,
+    "failures": []
+  },
+  {
+    "sample": "sans-normal-page1",
+    "glyphs": 96,
+    "maxBoundsDifferencePx": 1,
+    "failures": []
+  },
+  {
+    "sample": "sans-normal-page2",
+    "glyphs": 98,
+    "maxBoundsDifferencePx": 1,
+    "failures": []
+  },
+  {
+    "sample": "sans-normal-last",
+    "glyphs": 42,
+    "maxBoundsDifferencePx": 1,
+    "failures": []
+  },
+  {
+    "sample": "serif-normal-last",
+    "glyphs": 42,
+    "maxBoundsDifferencePx": 0,
+    "failures": []
+  },
+  {
+    "sample": "serif-large-page1",
+    "glyphs": 91,
+    "maxBoundsDifferencePx": 0,
+    "failures": []
+  }
+]

@@ -9,7 +9,7 @@ public final class AlignmentChecks extends DeviceChecks {
  for(int font:new int[]{16,19,20,22,29,30})for(int spacing:new int[]{0,1,2}){
  ReaderSettings on=new ReaderSettings(getTargetContext());on.comments=true;on.font=font;on.spacing=spacing;ReaderSettings off=new ReaderSettings(getTargetContext());off.comments=false;off.font=font;off.spacing=spacing;
  for(String text:new String[]{"短句。",repeat("汉",30),repeat("长段落保证文字连续且段评不遮挡。",70)+"末。","对话。\n\n第二段。\n\n"+repeat("汉",38),"含 emoji😀 与生僻字𠀀。"+repeat("连续正文。",60),"段末emoji😀"}){
- ReaderPaginator a=new ReaderPaginator(text,"章节标题",1080,1920,density,scaled,on),b=new ReaderPaginator(text,"章节标题",1080,1920,density,scaled,off);coverage(a);coverage(b);assertTrue(a.heading.getWidth()==b.heading.getWidth(),"no global comment gutter");Map<Integer,android.text.StaticLayout> before=new HashMap<>();for(ReaderPaginator.Page page:b.pages)for(ReaderPaginator.Fragment f:page.fragments)before.put(f.paragraphStart,f.layout);
+ ReaderPaginator a=new ReaderPaginator(text,"章节标题",1080,1920,density,scaled,on),b=new ReaderPaginator(text,"章节标题",1080,1920,density,scaled,off);coverage(a);coverage(b);assertTrue(a.heading.getWidth()==b.heading.getWidth(),"no global comment gutter");Map<Integer,ReaderTextLayout> before=new HashMap<>();for(ReaderPaginator.Page page:b.pages)for(ReaderPaginator.Fragment f:page.fragments)before.put(f.paragraphStart,f.layout);
  Map<Integer,Integer> endings=new HashMap<>();for(int pageIndex=0;pageIndex<a.pages.size();pageIndex++){
  Bitmap bitmap=Bitmap.createBitmap(1080,1920,Bitmap.Config.ARGB_8888);bitmap.eraseColor(Color.WHITE);a.draw(new Canvas(bitmap),pageIndex,Color.BLACK);
  ReaderPaginator.Page page=a.pages.get(pageIndex);for(int i=0;i<page.fragments.size();i++){

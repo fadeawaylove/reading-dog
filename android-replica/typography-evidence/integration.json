@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "checks": [
+    {
+      "check": "user_position_after_upgrade",
+      "result": {
+        "chapter": "第3章 神类起源？",
+        "offset": 1938,
+        "font": 24
+      }
+    },
+    {
+      "check": "reflow_and_page_turns",
+      "result": true
+    },
+    {
+      "check": "inline_comment_tap_and_content",
+      "result": true
+    },
+    {
+      "check": "preferences_progress_and_books_preserved",
+      "result": true
+    }
+  ],
+  "error": null
+}
