@@ -32,7 +32,7 @@ public class TypographyChecks extends Instrumentation {
   JSONArray paras=fixture.getJSONArray("paragraphs"),reference=fixture.getJSONArray("pages");StringBuilder body=new StringBuilder();Map<Integer,Long> counts=new HashMap<>();Map<Integer,Integer> nativeOffsets=new TreeMap<>();JSONObject delegates=fixture.getJSONObject("inlineDelegates");
   for(int n=1;n<paras.length();n++){if(n>1)body.append("\n\n");String value=paras.getJSONObject(n).getString("text");if(value.endsWith("\n"))value=value.substring(0,value.length()-1);nativeOffsets.put(body.length(),start(paras.getJSONObject(n).getJSONObject("range")));if(delegates.has(Integer.toString(n)))counts.put(body.length(),1L);body.append(value);}
   String title=paras.getJSONObject(0).getString("text");if(title.endsWith("\n"))title=title.substring(0,title.length()-1);
-  ReaderSettings settings=new ReaderSettings(getTargetContext());settings.font=font;settings.spacing=fixture.optInt("spacingSetting",1);settings.fontWeight=0;settings.serif=fixture.getString("referenceFont").contains("serif");settings.comments=true;
+  ReaderSettings settings=new ReaderSettings(getTargetContext());settings.font=font;settings.legacyLineSpacing=true;settings.lineSpacing=ReaderSettings.legacySpacing(fixture.optInt("spacingSetting",1));settings.fontWeight=0;settings.serif=fixture.getString("referenceFont").contains("serif");settings.comments=true;
   ReaderPaginator paginator=new ReaderPaginator(body.toString(),title,1080,1920,3,3,settings,counts);
   if(paginator.pages.size()!=reference.length()){pageMismatches++;failure("page-count",font,""+reference.length(),""+paginator.pages.size());}
   JSONArray actualPages=new JSONArray();for(int p=0;p<Math.min(paginator.pages.size(),reference.length());p++){

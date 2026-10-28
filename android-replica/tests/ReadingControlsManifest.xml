@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.readingcontrolschecks"><application android:label="Reading controls checks"/><instrumentation android:name="com.example.yuejie.ReadingControlsChecks" android:targetPackage="com.example.yuejie" android:functionalTest="true"/></manifest>

@@ -20,7 +20,10 @@ final class ReaderTextLayout {
  }
  final String text;final TextPaint paint;final int width;final float lineSpace,lineHeight;final List<Cluster> clusters;final List<Line> lines;
  ReaderTextLayout(String text,TextPaint paint,int width,float lineSpace,boolean heading,float bubble){
-  this.text=text;this.paint=paint;this.width=width;this.lineSpace=lineSpace;lineHeight=paint.getTextSize()*1.4f;
+  this(text,paint,width,lineSpace,heading,bubble,false,0);
+ }
+ ReaderTextLayout(String text,TextPaint paint,int width,float lineSpace,boolean heading,float bubble,boolean tight,float bubbleHeight){
+  this.text=text;this.paint=paint;this.width=width;this.lineSpace=lineSpace;lineHeight=tight?inkHeight(paint):paint.getTextSize()*1.4f;
   ArrayList<Cluster> units=new ArrayList<>();float[] advances=new float[text.length()];TextPaint measuring=new TextPaint();measuring.setTypeface(paint.getTypeface());measuring.setTextSize(paint.getTextSize());measuring.setFakeBoldText(paint.isFakeBoldText());measuring.getTextWidths(text,advances);
   BreakIterator iterator=BreakIterator.getCharacterInstance(Locale.ROOT);iterator.setText(text);int start=iterator.first();
   for(int end=iterator.next();end!=BreakIterator.DONE;start=end,end=iterator.next()){
@@ -49,10 +52,24 @@ final class ReaderTextLayout {
    for(int i=first;i<last;i++){Cluster c=units.get(i);int k=i-first;float before=i==first&&c.kind==2?c.advance*.5f:c.before,after=i==last-1?0:c.after;float shrink=tailOnly?(i==last-1?compression:0):(c.kind!=0?Math.max(0,c.advance*.5f*ratio-before-after):0);x[k]=cursor;origin[k]=cursor-before-(c.kind==2?shrink:0);w[k]=c.advance-before-after-shrink;cursor+=w[k];}
    if(!heading&&!end&&last-first>1){int gaps=0;for(int i=first+1;i<last;i++)if(!(word(text.codePointAt(units.get(i-1).start))&&word(text.codePointAt(units.get(i).start))))gaps++;extra=gaps==0?0:Math.max(0,available-cursor+indent-hyphenWidth)/gaps;int gap=0;for(int i=1;i<x.length;i++){if(!(word(text.codePointAt(units.get(first+i-1).start))&&word(text.codePointAt(units.get(first+i).start))))gap++;x[i]+=extra*gap;origin[i]+=extra*gap;}cursor+=extra*gaps;}
    float top=built.size()*(lineHeight+lineSpace),baseline=top+lineSpace/2+(lineHeight-paint.getFontMetrics().descent-paint.getFontMetrics().ascent)/2;
-   built.add(new Line(units.get(first).start,units.get(last-1).end,first,last,top,top+lineHeight+lineSpace,baseline,indent,cursor,hyphenWidth,x,w,origin));first=last;
+   float bottom=top+lineHeight+lineSpace;
+   if(tight){
+    Rect ink=new Rect();measuring.getTextBounds(text,units.get(first).start,units.get(last-1).end,ink);
+    if(hyphenWidth>0){Rect dash=new Rect();measuring.getTextBounds("-",0,1,dash);ink.union(dash);}
+    if(ink.isEmpty()){ink.top=(int)Math.floor(paint.getFontMetrics().ascent);ink.bottom=(int)Math.ceil(paint.getFontMetrics().descent);}
+    float stroke=paint.getStyle()==Paint.Style.FILL?0:paint.getStrokeWidth()/2;
+    // One physical pixel between measured ink envelopes, including stroke.
+    float contentHeight=ink.height()+2*stroke;
+    if(end)contentHeight=Math.max(contentHeight,bubbleHeight);
+    top=built.isEmpty()?0:built.get(built.size()-1).bottom;
+    bottom=top+contentHeight+1+lineSpace;
+    baseline=top+(1+lineSpace)/2+(contentHeight-ink.height())/2-ink.top;
+   }
+   built.add(new Line(units.get(first).start,units.get(last-1).end,first,last,top,bottom,baseline,indent,cursor,hyphenWidth,x,w,origin));first=last;
   }
   lines=Collections.unmodifiableList(built);
  }
+ static float inkHeight(TextPaint paint){TextPaint fill=new TextPaint(paint);fill.setStyle(Paint.Style.FILL);Rect bounds=new Rect();fill.getTextBounds("国",0,1,bounds);return bounds.height()+(paint.getStyle()==Paint.Style.FILL?0:paint.getStrokeWidth());}
  static int compressType(int cp){switch(cp){case 0x2018:case 0x201c:case 0x300a:case 0x3010:case 0xff08:return 2;case 0x2019:case 0x201d:case 0x3001:case 0x3002:case 0x300b:case 0x3011:case 0xff01:case 0xff09:case 0xff0c:case 0xff1a:case 0xff1b:case 0xff1f:return 1;default:return 0;}}
  static boolean canBreak(List<Cluster> units,int next,String text){if(next==units.size())return true;int a=text.codePointAt(units.get(next-1).start),b=text.codePointAt(units.get(next).start);if(compressType(a)==2||compressType(b)==1||b==0x2026)return false;if(a==0x2014&&b==0x2014)return false;return !(word(a)&&word(b));}
  static boolean word(int cp){return cp<128&&(Character.isLetterOrDigit(cp)||cp=='_'||cp=='.');}
