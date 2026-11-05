@@ -14,7 +14,7 @@ import static com.example.yuejie.PaperUi.*;
 
 /** One local-library home. Search is an inline state, never a second home tab. */
 public class MainActivity extends Activity {
-  static final int HOME_PAPER=0xfff5f1e8,HOME_INK=0xff000000,HOME_MUTED=0xff000000,HOME_RULE=0xffdedbd1;
+  static final int HOME_PAPER=0xfff5f1e8,HOME_INK=0xff252820,HOME_MUTED=0xff626557,HOME_RULE=0xffdedbd1;
   LocalLibrary library;NovelApi api;LinearLayout root,list;ScrollView scroll;EditText input;ImageView clear;
   ShelfRefresher shelfRefresher;TextView refreshStatus;boolean shelfRefreshing;String shelfRefreshMessage="";int refreshGeneration;
   final List<Book> results=new ArrayList<>();
@@ -37,7 +37,7 @@ public class MainActivity extends Activity {
 
   void buildHome(){
     root=col(this);root.setBackgroundColor(HOME_PAPER);root.setFitsSystemWindows(true);setContentView(root);
-    LinearLayout searchBlock=col(this);searchBlock.setPadding(d(22),d(25),d(22),0);
+    LinearLayout searchBlock=col(this);searchBlock.setPadding(d(16),d(8),d(16),0);
     LinearLayout bar=row(this);bar.setContentDescription("搜索区域");
     ImageView search=icon(this,"搜索",0xff929287,30,()->submit());search.setPadding(0,d(7),d(10),d(7));search.setContentDescription("提交搜索");bar.addView(search);
     input=new EditText(this);input.setSingleLine();input.setTextSize(16);input.setTextColor(HOME_INK);input.setHintTextColor(HOME_MUTED);input.setHint("搜索书名、作者");input.setBackgroundColor(Color.TRANSPARENT);input.setPadding(0,0,0,0);input.setImeOptions(EditorInfo.IME_ACTION_SEARCH);input.setInputType(android.text.InputType.TYPE_CLASS_TEXT);input.setContentDescription("搜索书名或作者");bar.addView(input,new LinearLayout.LayoutParams(0,d(44),1));
@@ -46,10 +46,22 @@ public class MainActivity extends Activity {
     input.setOnEditorActionListener((view,action,event)->{if(action==EditorInfo.IME_ACTION_SEARCH||(event!=null&&event.getKeyCode()==KeyEvent.KEYCODE_ENTER&&event.getAction()==KeyEvent.ACTION_UP)){submit();return true;}return false;});
     input.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence text,int start,int count,int after){}public void afterTextChanged(Editable text){}public void onTextChanged(CharSequence text,int start,int before,int count){clear.setVisibility(text.length()==0?View.GONE:View.VISIBLE);if(searching&&!text.toString().trim().equals(query)){generation++;loading=false;searching=false;more=false;results.clear();error="";query="";render();}}});
     searchBlock.addView(bar);View rule=new View(this);rule.setBackgroundColor(HOME_RULE);searchBlock.addView(rule,new LinearLayout.LayoutParams(-1,d(1)));root.addView(searchBlock);
-    refreshStatus=bodyLabel("",14,HOME_MUTED);refreshStatus.setGravity(Gravity.CENTER);refreshStatus.setPadding(d(22),d(9),d(22),d(3));refreshStatus.setVisibility(View.GONE);refreshStatus.setOnClickListener(v->refreshShelf(true));root.addView(refreshStatus);scroll=new RefreshScrollView(this,new RefreshScrollView.Host(){public boolean enabled(){return !searching&&!shelfRefreshing&&!library.books(true).isEmpty();}public void distance(float distance){refreshStatus.setVisibility(View.VISIBLE);refreshStatus.setText(distance>=72?"松开刷新书架":"下拉刷新书架");}public void released(boolean refresh){if(refresh)refreshShelf(true);else updateRefreshStatus();}});scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);list=col(this);list.setPadding(d(22),d(30),d(22),d(28));scroll.addView(list);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));render();
+    scroll=new RefreshScrollView(this,new RefreshScrollView.Host(){
+      public boolean enabled(){return !searching&&!shelfRefreshing&&!library.books(true).isEmpty();}
+      public void distance(float distance){if(refreshStatus!=null)refreshStatus.setText(distance>=72?"松开刷新":"下拉刷新");}
+      public void released(boolean refresh){if(refresh)refreshShelf(true);else updateRefreshStatus();}
+    });
+    scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);
+    list=col(this);list.setPadding(d(16),d(12),d(16),d(16));scroll.addView(list);
+    root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));render();
   }
-  void updateRefreshStatus(){if(refreshStatus==null)return;refreshStatus.setText(shelfRefreshing?"正在更新书架…":shelfRefreshMessage);refreshStatus.setVisibility(!searching&&(shelfRefreshing||!shelfRefreshMessage.isEmpty())?View.VISIBLE:View.GONE);}
-  void refreshShelf(boolean force){if(shelfRefresher==null||shelfRefreshing)return;shelfRefreshMessage="";final int refreshToken=++refreshGeneration;boolean started=shelfRefresher.refresh(force,new ShelfRefresher.Listener(){public void changed(){if(!isDestroyed()&&!isFinishing())render();}public void complete(int updated,int failed){if(isDestroyed()||isFinishing())return;shelfRefreshing=false;shelfRefreshMessage=failed>0?"有 "+failed+" 本未能更新 · 点击重试":"已更新 "+updated+" 本书";render();if(failed==0)refreshStatus.postDelayed(()->{if(!isDestroyed()&&!shelfRefreshing&&refreshToken==refreshGeneration){shelfRefreshMessage="";updateRefreshStatus();}},2500);}});shelfRefreshing=started;updateRefreshStatus();}
+  void updateRefreshStatus(){
+    if(refreshStatus==null)return;
+    refreshStatus.setText(shelfRefreshing?"更新中…":shelfRefreshMessage.isEmpty()?"刷新 ↻":shelfRefreshMessage);
+    refreshStatus.setEnabled(!shelfRefreshing);
+    refreshStatus.setContentDescription(shelfRefreshing?"正在更新书架":shelfRefreshMessage.isEmpty()?"刷新书架":shelfRefreshMessage+"，点击重新刷新");
+  }
+  void refreshShelf(boolean force){if(shelfRefresher==null||shelfRefreshing)return;shelfRefreshMessage="";final int refreshToken=++refreshGeneration;boolean started=shelfRefresher.refresh(force,new ShelfRefresher.Listener(){public void changed(){if(!isDestroyed()&&!isFinishing())render();}public void complete(int updated,int failed){if(isDestroyed()||isFinishing())return;shelfRefreshing=false;shelfRefreshMessage=failed>0?failed+" 本失败 · 重试":"已更新";render();if(failed==0)list.postDelayed(()->{if(!isDestroyed()&&!shelfRefreshing&&refreshToken==refreshGeneration){shelfRefreshMessage="";updateRefreshStatus();}},2500);}});shelfRefreshing=started;updateRefreshStatus();}
   void addProgress(LinearLayout parent,Book book,JSONObject position){LinearLayout line=row(this);TextView progress=bodyLabel(progressLabel(book,position),14,HOME_MUTED);line.addView(progress,new LinearLayout.LayoutParams(0,-2,1));parent.addView(line);LinearLayout updates=row(this);addUpdateBadge(updates,book,position);if(updates.getChildCount()>0){gap(parent,6);parent.addView(updates);}}
   void addUpdateBadge(LinearLayout parent,Book book,JSONObject position){int count=library.catalogStatus(book,position).newChapters;if(count<=0)return;TextView badge=bodyLabel("有新章 · "+count,14,HOME_INK);badge.setPadding(d(7),d(3),d(7),d(3));badge.setBackground(bg(this,0xffe4e9dd,5));badge.setContentDescription(book.title+"，新增 "+count+" 章");parent.addView(badge);}
   void hideKeyboard(){((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(input.getWindowToken(),0);input.clearFocus();}
@@ -65,20 +77,57 @@ public class MainActivity extends Activity {
   void divider(LinearLayout parent){View line=new View(this);line.setBackgroundColor(HOME_RULE);parent.addView(line,new LinearLayout.LayoutParams(-1,d(1)));}
   TextView bodyLabel(String text,float size,int color){return PaperUi.text(this,text,size,color);}
   TextView homeButton(String label,Runnable action){TextView t=button(this,label,action);t.setTextSize(16);return t;}
-  void render(){if(list==null)return;updateRefreshStatus();int y=scroll.getScrollY();list.removeAllViews();if(searching)renderResults();else renderLibrary();scroll.post(()->{if(!isDestroyed())scroll.scrollTo(0,y);});}
+  void render(){if(list==null)return;refreshStatus=null;int y=scroll.getScrollY();list.removeAllViews();if(searching)renderResults();else renderLibrary();updateRefreshStatus();scroll.post(()->{if(!isDestroyed())scroll.scrollTo(0,y);});}
 
   void renderLibrary(){
-    TextView recent=bodyLabel("最近阅读",14,HOME_MUTED);list.addView(recent);gap(list,22);
-    Book last=null;for(Book book:library.books(true))if(library.progress(book.id)!=null){last=book;break;}
-    if(last!=null){Book book=last;JSONObject position=library.progress(book.id);LinearLayout titleRow=row(this);TextView title=heading(this,book.title,24);title.setTextColor(HOME_INK);title.setMaxLines(2);title.setEllipsize(TextUtils.TruncateAt.END);title.setLineSpacing(d(2),1.15f);titleRow.addView(title,new LinearLayout.LayoutParams(0,-2,1));ImageView next=icon(this,"下一页",0xff536951,36,()->read(book));next.setContentDescription("继续阅读"+book.title);next.setBackground(bg(this,0xffe6e9de,18));LinearLayout.LayoutParams arrow=new LinearLayout.LayoutParams(d(36),d(36));arrow.leftMargin=d(12);titleRow.addView(next,arrow);titleRow.setOnClickListener(v->read(book));titleRow.setContentDescription("继续阅读："+book.title);titleRow.setMinimumHeight(d(52));list.addView(titleRow,new LinearLayout.LayoutParams(-1,-2));gap(list,8);list.addView(authorLabel(book,14));gap(list,13);TextView chapter=bodyLabel(position.optString("title"),14,HOME_MUTED);chapter.setSingleLine();chapter.setEllipsize(TextUtils.TruncateAt.END);chapter.setOnClickListener(v->read(book));list.addView(chapter);gap(list,7);addProgress(list,book,position);gap(list,14);
-      double fraction=progressFraction(book.id,position);View progress=new View(this){final Paint paint=new Paint(3);@Override protected void onDraw(Canvas canvas){paint.setColor(HOME_RULE);canvas.drawRect(0,0,getWidth(),getHeight(),paint);paint.setColor(0xff5d7156);canvas.drawRect(0,0,(float)(getWidth()*fraction),getHeight(),paint);}};progress.setContentDescription("阅读进度");list.addView(progress,new LinearLayout.LayoutParams(-1,d(2)));
-    }else{TextView empty=bodyLabel("尚无阅读记录",16,HOME_INK);empty.setTypeface(SERIF);list.addView(empty);gap(list,20);divider(list);}
-    gap(list,26);List<Book> books=library.books(true);LinearLayout shelfHeading=row(this);TextView title=bodyLabel("书架",20,HOME_INK);title.setTypeface(null,Typeface.BOLD);shelfHeading.addView(title,new LinearLayout.LayoutParams(0,-2,1));shelfHeading.addView(bodyLabel(books.size()+" 本",14,HOME_MUTED));list.addView(shelfHeading);gap(list,15);
-    if(books.isEmpty()){TextView empty=bodyLabel("书架还是空的，搜索一本喜欢的书。",16,HOME_MUTED);empty.setPadding(0,d(15),0,d(20));empty.setOnClickListener(v->{input.requestFocus();((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT);});list.addView(empty);}
+    List<Book> books=library.books(true);
+    Book last=null;for(Book book:books)if(library.progress(book.id)!=null){last=book;break;}
+    if(last!=null){
+      Book book=last;JSONObject position=library.progress(book.id);
+      LinearLayout resume=row(this);resume.setPadding(d(12),d(10),d(12),d(10));resume.setMinimumHeight(d(64));
+      resume.setBackground(bg(this,0xffe8ebdf,6));
+      resume.addView(icon(this,"书签",0xff445e3c,24,null));
+      LinearLayout copy=col(this);LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.leftMargin=d(10);resume.addView(copy,cp);
+      LinearLayout titleLine=row(this);TextView label=bodyLabel("继续读",12,0xff445e3c);titleLine.addView(label);
+      TextView title=compactTitle(book.title);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.leftMargin=d(8);titleLine.addView(title,tp);copy.addView(titleLine);
+      gap(copy,3);copy.addView(compactMetadata(position.optString("title")+" · "+compactProgress(book,position)));
+      resume.addView(icon(this,"下一页",0xff445e3c,24,null));
+      resume.setOnClickListener(v->read(book));resume.setContentDescription("继续阅读："+book.title+"，"+position.optString("title"));
+      list.addView(resume,new LinearLayout.LayoutParams(-1,-2));gap(list,4);
+    }
+    LinearLayout shelfHeading=row(this);TextView title=bodyLabel("书架",18,HOME_INK);title.setTypeface(null,Typeface.BOLD);shelfHeading.addView(title);
+    TextView count=bodyLabel(books.size()+" 本",12,HOME_MUTED);LinearLayout.LayoutParams countParams=new LinearLayout.LayoutParams(0,-2,1);countParams.leftMargin=d(8);shelfHeading.addView(count,countParams);
+    refreshStatus=bodyLabel("",12,HOME_MUTED);refreshStatus.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);refreshStatus.setSingleLine();refreshStatus.setEllipsize(TextUtils.TruncateAt.END);
+    refreshStatus.setOnClickListener(v->refreshShelf(true));refreshStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+    shelfHeading.addView(refreshStatus,new LinearLayout.LayoutParams(d(128),d(44)));list.addView(shelfHeading);
+    if(books.isEmpty()){
+      TextView empty=bodyLabel("书架还是空的，搜索一本喜欢的书。",14,HOME_MUTED);empty.setPadding(0,d(16),0,d(20));
+      empty.setOnClickListener(v->{input.requestFocus();((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(input,InputMethodManager.SHOW_IMPLICIT);});list.addView(empty);
+    }
     for(Book book:books)list.addView(libraryRow(book));
   }
+  TextView compactTitle(String value){TextView title=bodyLabel(value,16,HOME_INK);title.setTypeface(null,Typeface.BOLD);title.setSingleLine();title.setEllipsize(TextUtils.TruncateAt.END);return title;}
+  TextView compactMetadata(String value){TextView text=bodyLabel(value,12,HOME_MUTED);text.setSingleLine();text.setEllipsize(TextUtils.TruncateAt.END);return text;}
+  String compactProgress(Book book,JSONObject position){
+    LocalLibrary.CatalogStatus status=library.catalogStatus(book,position);
+    if(position==null)return status.total>0?"未读 · 共 "+status.total+" 章":"未读";
+    int current=Math.max(1,status.current);
+    return status.total>0?Math.min(current,status.total)+" / "+status.total+" 章":"第 "+current+" 章";
+  }
   View libraryRow(Book book){
-    LinearLayout wrapper=col(this);LinearLayout row=row(this);row.setPadding(0,d(10),0,d(10));row.setMinimumHeight(d(66));row.addView(cover(this,book,30));LinearLayout copy=col(this);LinearLayout.LayoutParams info=new LinearLayout.LayoutParams(0,-2,1);info.leftMargin=d(13);info.rightMargin=d(10);row.addView(copy,info);TextView title=bodyLabel(book.title,18,HOME_INK);title.setMaxLines(2);title.setEllipsize(TextUtils.TruncateAt.END);title.setLineSpacing(d(1),1);copy.addView(title);gap(copy,4);copy.addView(authorLabel(book,14));gap(copy,5);JSONObject position=library.progress(book.id);TextView status=bodyLabel(position==null?progressLabel(book,null):progressLabel(book,position)+" · "+position.optString("title"),14,HOME_MUTED);status.setSingleLine();status.setEllipsize(TextUtils.TruncateAt.END);copy.addView(status);LinearLayout update=row(this);addUpdateBadge(update,book,position);if(update.getChildCount()>0){gap(copy,5);copy.addView(update);}row.addView(icon(this,"下一页",0xffa09e90,18,null));row.setOnClickListener(v->read(book));row.setContentDescription(book.title+"，"+(position==null?"尚未阅读":"继续阅读"));row.setOnLongClickListener(v->{new AlertDialog.Builder(this).setTitle(book.title).setItems(new String[]{"书籍详情","移出书架"},(dialog,n)->{if(n==0)details(book);else{library.remove(book.id);render();}}).show();return true;});wrapper.addView(row);LinearLayout lineContainer=col(this);lineContainer.setPadding(d(43),0,0,0);divider(lineContainer);wrapper.addView(lineContainer);return wrapper;
+    LinearLayout wrapper=col(this);divider(wrapper);
+    LinearLayout row=row(this);row.setPadding(0,d(8),0,d(8));row.setMinimumHeight(d(63));row.addView(cover(this,book,32));
+    LinearLayout copy=col(this);LinearLayout.LayoutParams info=new LinearLayout.LayoutParams(0,-2,1);info.leftMargin=d(12);row.addView(copy,info);
+    LinearLayout titleLine=row(this);titleLine.addView(compactTitle(book.title),new LinearLayout.LayoutParams(0,-2,1));
+    JSONObject position=library.progress(book.id);int added=library.catalogStatus(book,position).newChapters;
+    if(added>0){TextView badge=bodyLabel("新 "+added+" 章",11,0xff445e3c);badge.setSingleLine();LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-2,-2);bp.leftMargin=d(8);titleLine.addView(badge,bp);}
+    copy.addView(titleLine);gap(copy,3);
+    String author=book.author.isEmpty()?"作者未知":book.author;
+    String chapter=position==null?"":position.optString("title");
+    copy.addView(compactMetadata(author+" · "+compactProgress(book,position)+(chapter.isEmpty()?"":" · "+chapter)));
+    row.setOnClickListener(v->read(book));row.setContentDescription(book.title+"，"+author+"，"+compactProgress(book,position)+"，"+chapter+(added>0?"，新增 "+added+" 章":""));
+    row.setOnLongClickListener(v->{new AlertDialog.Builder(this).setTitle(book.title).setItems(new String[]{"书籍详情","移出书架"},(dialog,n)->{if(n==0)details(book);else{library.remove(book.id);render();}}).show();return true;});
+    wrapper.addView(row);return wrapper;
   }
   void renderResults(){
     LinearLayout heading=row(this);TextView title=bodyLabel("搜索结果",20,HOME_INK);title.setTypeface(null,Typeface.BOLD);heading.addView(title,new LinearLayout.LayoutParams(0,-2,1));heading.addView(bodyLabel(results.size()+" 本",14,HOME_MUTED));list.addView(heading);gap(list,15);
