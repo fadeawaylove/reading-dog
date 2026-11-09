@@ -1,31 +1,53 @@
-# 发布时双份上传
+# 阅读狗私有后端与版本发布
 
-GitHub 是正式发布地址，服务器只是备用下载。服务器不轮询 GitHub。App 优先使用 GitHub，连接超时或读取停滞 5 秒后尝试备用站；检查更新与校验文件请求也支持网络失败后的备用请求。正常持续下载不会因总耗时超过 5 秒而中断。
+从 v0.24 起，应用数据、同步、检查更新、APK 与校验文件统一使用 `https://reader.fadeaway.ltd`，不再创建 GitHub Release，也不向旧备用站上传。既有历史 Release 和下载站保留为历史资料。
 
-备用入口：http://magpie.fadeaway.ltd/reading-dog/
+首次迁移需要手动覆盖安装 v0.24（保留原签名及数据），旧版应用不会自动发现新的私有更新源。之后进入「关于阅读狗 → 检查更新」。
 
-## 每次发布
+## 构建 Android
 
-按照现有流程更新版本、构建并验证签名，准备 `main`、`v<版本>` 标签和包含同一签名 APK 的 `release-assets/v<版本>` 分支。然后从仓库根目录运行：
-
-```powershell
-python deploy/publish-release.py
-```
-
-此命令原子推送三个 Git 引用，等待标签对应的 GitHub Actions 成功及正式 Release 发布，下载核对 GitHub APK 与校验文件，再将**本地同一 APK**通过受限 SSH 上传到备用服务器，最后下载备用包核对 SHA-256。任一目标验证失败，命令以失败退出，不报告发布完成。
-
-已推送或备用上传失败后重试（不会重复创建 Release）：
+保留原来的 `android-replica/signing/debug.keystore`。私有配置 `android-replica/assets/backend-private.json` 包含 `{"token":"与后端 ACCESS_TOKEN 相同的私有令牌"}`，已被 Git 忽略；不要提交或公开带令牌的自用 APK。
 
 ```powershell
-python deploy/publish-release.py --skip-push
+./android-replica/build-touch.ps1
 ```
 
-当前机器的默认上传密钥在已忽略的 `root-work/download-hosting/publish-key`，也可用 `--key <路径>` 指定。密钥不进入版本库。新机器需预先核验并配置 SSH 主机指纹及受限上传密钥。仅在 GitHub 推送标签不会自动上传备用站；完整发布必须使用上述本地入口。
+产物 `android-replica/touch-build/yuejie.apk`。脚本从 PATH 选择 JDK，使用 `C:/Android/Sdk`。新开发机需先配置 JDK 17 和 Android SDK。
 
-## 服务器
+## 私有发布
 
-独立服务 `reading-dog-download.service` 使用 `/opt/reading-dog-download/nginx.conf`，HTTP 80 端口，静态目录 `/srv/reading-dog-download`。只提供 GET/HEAD，禁用目录列表、隐藏文件及符号链接访问，不提供 HTTP 上传。现有其他服务不变。
+先递增 `android-replica/version.json` 的 name/code，并更新 `RELEASE_NOTES.md` 顶部说明。构建和测试通过后：
 
-`reading-dog-download` 账号的发布密钥强制执行 root 所有的 `/opt/reading-dog-download/receive.py`，不能执行任意 SSH 命令、使用终端或转发端口。接收器验证版本、大小及 SHA-256，拒绝替换已发布版本的不同 APK，拒绝回退首页版本。没有同步定时任务。
+```powershell
+python -m pip install paramiko
+python deploy/publish-release.py --password
+```
 
-`download-site/` 保存已部署的 Nginx 配置、服务定义与接收脚本。修改后需另行部署，普通发布仅上传 APK、校验文件和下载页元数据。
+密码通过交互输入，不写入发布脚本。SSH 主机指纹必须事先核验并存在于本机 known_hosts；脚本不会自动接受新主机。未新增任何长期 root 发布密钥。
+
+需要在本机复用连接时，可运行 `python deploy/server_connection.py --host <服务器地址>`，通过隐藏输入保存密码。配置位于 `%LOCALAPPDATA%/CodexServerConnections/reading-dog.json`，密码使用 Windows 当前用户 DPAPI 加密；仅同一 Windows 用户可解密。不要将此本机配置提交到仓库。之后发布可使用 `python deploy/publish-release.py --saved-connection`，仍验证 known_hosts，且保存配置的主机必须与 `--host` 一致。其他本机项目可复用 `deploy/server_connection.py` 的 `load()` 接口，不需要明文配置。
+
+若已有获授权的 SSH 发布身份，也可使用 `--key <已有密钥>`；该身份应强制运行 `/usr/bin/python3 /opt/reading-dog-backend/receive-release.py`。此项目不会自动配置 SSH 授权。
+
+发布脚本校验包名、版本、原签名指纹和 SHA-256，再上传版本包；接收器校验大小、元数据、校验文件和 ZIP 完整性。每个版本不可替换成不同 APK，禁止回退最新 versionCode；版本目录先完整落盘，再原子更新 latest.json。上传后脚本通过 HTTPS 下载实际 APK 再次核对。整个流程不执行 Git push、打标签或 GitHub API。
+
+仅生成本地发布包：`python deploy/publish-release.py --prepare-only`。
+
+## 后端运维
+
+服务器目录 `/opt/reading-dog-backend`，独立 Compose 项目 `reading-dog-backend`。后端端口仅绑定 `127.0.0.1:18082`，由现有 `vpn-next-gateway` 转发阅读域名。网关配置变更先备份、运行 `nginx -t`，再平滑重载。共享现有通配符证书及其自动续期，不修改 VPN 路由。
+
+```sh
+cd /opt/reading-dog-backend
+docker compose ps
+docker compose logs --tail 100
+curl -fsS http://127.0.0.1:18082/health
+```
+
+`.env` 存放 `ACCESS_TOKEN`，权限 0600。`data` 由 UID/GID 10001 持有，保存书库 SQLite、匿名上游身份、版本文件及备份；升级镜像必须保留此目录。备份每 24 小时生成，首次启动后约 1 分钟检查，每天最多一份 SQLite 一致性快照，保留 7 份。
+
+v0.27 可选字体保存在 `data/fonts`，需从源码 `backend/fonts` 部署两套 TTF 及 catalog.json，文件权限 0644。字体路径无需认证，可直接独立下载；APK 内的 font-catalog.json 固定了相同大小和 SHA-256。更换字体二进制时必须同时更新目录并发布新 APK，不能只替换服务端文件导致旧客户端校验失败。Android 正式 assets 中不得放回 TTF。
+
+恢复时先停新后端，备份整个 data，再将选定快照复制为 library.db，移开旧 WAL/SHM 并确认目录所有权后启动。快照之后的已确认同步可能丢失；不要将备份视为无损回滚。上游身份、版本文件及 `.env` 需另做受保护备份。
+
+后端源码、构建和接口说明见 `backend/README.md`。旧 `download-site` 文件仅用于历史下载站，不参与新版本发布。

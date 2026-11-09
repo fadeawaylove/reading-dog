@@ -25,7 +25,7 @@ public class UpdateChecks extends Instrumentation {
     void shot(String name)throws Exception {waitForIdleSync();SystemClock.sleep(400);Bitmap b=getUiAutomation().takeScreenshot();try(OutputStream out=new FileOutputStream(new File(output,name+".png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}b.recycle();}
     byte[] asset(String name)throws Exception {try(InputStream in=getContext().getAssets().open(name);ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);return out.toByteArray();}}
     String hash(byte[] data)throws Exception {StringBuilder b=new StringBuilder();for(byte value:MessageDigest.getInstance("SHA-256").digest(data))b.append(String.format(Locale.ROOT,"%02x",value&255));return b.toString();}
-    JSONObject fixture(byte[] bytes)throws Exception {String future=new String(asset("future-version.txt"),"UTF-8").trim();return new JSONObject().put("tag_name","v"+future).put("draft",false).put("prerelease",false).put("published_at","2026-10-26T00:00:00Z").put("body","测试夹具 · 不是真实发布\n\n- 新增检查更新\n- 验证下载、校验与安装入口\n\n"+String.join("\n",Collections.nCopies(12,"这是一条较长的更新说明，用于检查滚动区域和按钮可见性。"))).put("assets",new JSONArray().put(new JSONObject().put("name","reading-dog-"+future+".apk").put("size",bytes.length).put("digest","sha256:"+hash(bytes)).put("browser_download_url",UpdateRelease.PROJECT+"/releases/download/v"+future+"/reading-dog-"+future+".apk")));}
+    JSONObject fixture(byte[] bytes)throws Exception {String future=new String(asset("future-version.txt"),"UTF-8").trim();return new JSONObject().put("tag_name","v"+future).put("draft",false).put("prerelease",false).put("published_at","2026-10-26T00:00:00Z").put("body","测试夹具 · 不是真实发布\n\n- 新增检查更新\n- 验证下载、校验与安装入口\n\n"+String.join("\n",Collections.nCopies(12,"这是一条较长的更新说明，用于检查滚动区域和按钮可见性。"))).put("assets",new JSONArray().put(new JSONObject().put("name","reading-dog-"+future+".apk").put("size",bytes.length).put("digest","sha256:"+hash(bytes)).put("browser_download_url",UpdateRelease.PROJECT+"/releases/"+future+"/reading-dog-"+future+".apk")));}
     static class FixtureUpdater extends AppUpdater {
         byte[] payload;String metadata;boolean networkError,slow,primaryTimeout,backupError;int backupCalls;
         FixtureUpdater(Context c,byte[] bytes,String json){super(c);payload=bytes;metadata=json;}
@@ -45,34 +45,25 @@ public class UpdateChecks extends Instrumentation {
             rejects(()->UpdateRelease.requireAssetUrl("https://github.com.evil.example/fadeawaylove/reading-dog/releases/download/x/a.apk"),"reject external asset host");rejects(()->UpdateRelease.requireAssetUrl("http://github.com/fadeawaylove/reading-dog/releases/download/x/a.apk"),"reject plaintext asset URL");
             ok(target.checksum(hash(nextApk)+"  "+target.name+"\n").equals(hash(nextApk)),"checksum file matches exact asset");rejects(()->target.checksum(hash(nextApk)+"  unrelated.apk"),"reject wrong checksum filename");
             live=AppUpdater.get(getTargetContext());final AppUpdater real=live;
-            String metadata=real.readText(UpdateRelease.API,1024*1024,real.generation);UpdateRelease actual=new UpdateRelease(new JSONObject(metadata));ok(UpdateRelease.compare(actual.version,real.currentVersion)<=0,"live release is not newer than build under test");
+            if(!"true".equals(options.getString("skipLive"))){String metadata=real.readText(UpdateRelease.API,1024*1024,real.generation);UpdateRelease actual=new UpdateRelease(new JSONObject(metadata));ok(UpdateRelease.compare(actual.version,real.currentVersion)<=0,"live release is not newer than build under test");
             if(!options.getBoolean("skipLiveDownload",false)&&!"true".equals(options.getString("skipLiveDownload"))){
             HttpURLConnection download=real.open(actual.url,real.generation);byte[] published;
             try(InputStream input=download.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] bytes=new byte[8192];int n;while((n=input.read(bytes))!=-1)out.write(bytes,0,n);published=out.toByteArray();}finally{download.disconnect();}
             ok(published.length==actual.size&&hash(published).equals(real.expectedDigest(actual,real.generation)),"live release APK downloaded on phone and checksum matched");
             File old=new File(output,"old.apk");try(OutputStream out=new FileOutputStream(old)){out.write(published);}rejects(()->real.verify(old,actual,hash(published)),"reject same or older APK installation");old.delete();
-            }else{Bundle skipped=new Bundle();skipped.putString("stream","SKIP live APK download (separate integration check)\n");sendStatus(0,skipped);}
+            }else{Bundle skipped=new Bundle();skipped.putString("stream","SKIP live APK download (separate integration check)\n");sendStatus(0,skipped);}}
             ActivityMonitor homeMonitor=addMonitor(MainActivity.class.getName(),null,false);
             try(ParcelFileDescriptor fd=getUiAutomation().executeShellCommand("am start -W -n com.example.yuejie/.MainActivity");InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){byte[] buffer=new byte[1024];while(in.read(buffer)!=-1){}}
             home=(MainActivity)homeMonitor.waitForActivityWithTimeout(10000);removeMonitor(homeMonitor);ok(home!=null,"home launched");waitForIdleSync();shot("01-home");
             ActivityMonitor monitor=addMonitor(AboutActivity.class.getName(),null,false);ui(()->find(home.getWindow().getDecorView(),"关于阅读狗").performClick());about=(AboutActivity)monitor.waitForActivityWithTimeout(10000);removeMonitor(monitor);ok(about!=null,"home entry opens About");shot("02-about");
-            ui(()->about.action.performClick());waitUntil(()->real.state!=AppUpdater.State.CHECKING,"live check");ok(real.state==AppUpdater.State.LATEST,"installed version reports latest from live API");shot("03-latest-live");
+            if(!"true".equals(options.getString("skipLive"))){ui(()->about.action.performClick());waitUntil(()->real.state!=AppUpdater.State.CHECKING,"live check");ok(real.state==AppUpdater.State.LATEST,"installed version reports latest from live API");shot("03-latest-live");}
             fake=new FixtureUpdater(getTargetContext(),nextApk,json.toString());final FixtureUpdater test=fake;
             ui(()->{real.remove(about);about.hideDetails();about.updater=test;about.details=true;test.observe(about);test.check();});waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"fixture available");shot("04-available-fixture");
-            ok(android.security.NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted("magpie.fadeaway.ltd"),"backup domain permits HTTP");
-            ok(!android.security.NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted("example.com"),"other domains reject HTTP");
-            rejects(()->UpdateRelease.requireAssetUrl(UpdateRelease.BACKUP+"/../private.apk"),"reject backup traversal");
-            rejects(()->UpdateRelease.requireAssetUrl(UpdateRelease.BACKUP+"/0.17/reading-dog-0.17.apk?redirect=evil"),"reject backup query injection");
-            HttpURLConnection backup=real.open(UpdateRelease.BACKUP+"/latest.json",real.generation);
-            ok(backup.getConnectTimeout()==5000&&backup.getReadTimeout()==5000,"five-second connect and stalled-read timeouts");backup.disconnect();
-            UpdateRelease backupRelease=new UpdateRelease(new JSONObject(real.readText(UpdateRelease.BACKUP+"/latest.json",1024*1024,real.generation)));
-            File mirror=new File(output,"mirror.apk");real.downloadFile(backupRelease.url,backupRelease,mirror,real.generation);
-            try(InputStream in=new FileInputStream(mirror);ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);ok(hash(out.toByteArray()).equals(real.expectedDigest(backupRelease,real.generation)),"real backup APK downloaded and checksum matched");}mirror.delete();
-            test.primaryTimeout=true;test.backupCalls=0;
-            ui(()->test.check());waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"metadata fallback");ok(test.backupCalls==1,"metadata timeout falls back once");
-            test.backupCalls=0;ui(()->test.download());waitUntil(()->test.state==AppUpdater.State.READY,"APK fallback");ok(test.backupCalls==1,"GitHub timeout falls back to verified same-version APK");AppUpdater.apk(getTargetContext()).delete();
-            test.backupError=true;ui(()->test.download());waitUntil(()->test.state==AppUpdater.State.DOWNLOAD_FAILED,"both hosts unavailable");ok(!AppUpdater.apk(getTargetContext()).exists(),"both hosts failing never exposes installable APK");
-            test.backupError=false;test.primaryTimeout=false;
+            ok(!android.security.NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted("magpie.fadeaway.ltd"),"legacy HTTP download path disabled");
+            rejects(()->UpdateRelease.requireAssetUrl(UpdateRelease.BACKUP+"/../private.apk"),"reject release traversal");
+            rejects(()->UpdateRelease.requireAssetUrl(UpdateRelease.BACKUP+"/0.24/reading-dog-0.24.apk?redirect=evil"),"reject release query injection");
+            test.primaryTimeout=true;ui(()->test.check());waitUntil(()->test.state==AppUpdater.State.CHECK_FAILED,"backend timeout");ok(test.backupCalls==0,"backend failure never falls back to GitHub or legacy host");
+            test.primaryTimeout=false;ui(()->test.check());waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"backend retry");
             test.slow=true;ui(()->test.download());waitUntil(()->test.received>0,"progress");shot("05-downloading-fixture");ui(()->{test.cancel();about.hideDetails();});Thread.sleep(600);ok(test.state==AppUpdater.State.AVAILABLE&&!AppUpdater.apk(getTargetContext()).exists(),"cancel removes partial and suppresses stale completion");
             test.networkError=true;ui(()->{about.details=true;test.check();});waitUntil(()->test.state==AppUpdater.State.CHECK_FAILED,"offline check");shot("06-network-error-fixture");ok(test.error.contains("网络"),"network failure has actionable message");test.networkError=false;
             ui(()->test.check());waitUntil(()->test.state==AppUpdater.State.AVAILABLE,"retry check");

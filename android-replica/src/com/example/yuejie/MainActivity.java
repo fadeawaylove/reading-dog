@@ -31,7 +31,9 @@ public class MainActivity extends Activity {
     shelfRefresher=new ShelfRefresher(library,book->{Exception problem=null;try{api.directory(book.id,true);}catch(Exception e){problem=e;}try{api.detail(book.id);}catch(Exception e){if(problem==null)problem=e;}if(problem!=null)throw problem;});buildHome();
     if(state!=null){String saved=state.getString("query","");input.setText(saved);if(state.getBoolean("searching",false)&&!saved.isEmpty())submit();}
   }
-  @Override protected void onResume(){super.onResume();if(list!=null){render();refreshShelf(false);}}
+  final Runnable syncChanged=()->{if(list!=null&&!isFinishing()&&!isDestroyed())render();};
+  @Override protected void onPause(){SyncEngine.listeners.remove(syncChanged);super.onPause();}
+  @Override protected void onResume(){super.onResume();SyncEngine.listeners.add(syncChanged);if(list!=null){render();refreshShelf(false);}}
   @Override protected void onDestroy(){generation++;if(shelfRefresher!=null)shelfRefresher.close();super.onDestroy();}
   @Override protected void onSaveInstanceState(Bundle state){state.putString("query",input.getText().toString());state.putBoolean("searching",searching);super.onSaveInstanceState(state);}
 

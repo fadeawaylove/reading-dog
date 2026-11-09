@@ -6,6 +6,12 @@ import java.util.Locale;
 
 /** Local-only policy, using the platform contract recovered from Tomato 7.3.9.32. */
 final class EInkSupport {
+ // Rendering policy only. Recognizing Hanvon must never enable the Onyx driver.
+ static boolean stableDisplay(String manufacturer,String brand,String model,String device,String product){
+  for(String vendor:new String[]{manufacturer,brand})if(vendor!=null&&Arrays.asList("hanvon","hanwang","onyx","boyue").contains(vendor.trim().toLowerCase(Locale.ROOT)))return true;
+  for(String identity:new String[]{model,device,product})if(identity!=null&&identity.trim().toLowerCase(Locale.ROOT).matches("(?:hanvon[ _-]+)?pm6(?:[ _-].*)?"))return true;
+  return false;
+ }
  interface Platform {String property(String key)throws Exception; Driver connect()throws Exception;}
  interface Driver {void fast()throws Exception; void normal()throws Exception; void clear()throws Exception;}
  interface Classes {Class<?> find(String name)throws Exception;}
@@ -14,6 +20,7 @@ final class EInkSupport {
  private boolean connected, foreground;
  private Driver driver;
  private int started;
+ private String status="not matched";
 
  EInkSupport(String manufacturer,String hardware,Platform platform){
   this.platform=platform;
@@ -24,11 +31,13 @@ final class EInkSupport {
    match=hardwareMatch;
   }
   supported=match;
+  if(supported)status="matched; not connected";
  }
  boolean supported(){return supported;}
+ String status(){return status;}
  private Driver driver(){
   if(!supported)return null;
-  if(!connected){connected=true;try{driver=platform.connect();}catch(Exception ignored){}}
+  if(!connected){connected=true;try{driver=platform.connect();status=driver==null?"driver absent":"connected";}catch(Exception error){status="unavailable: "+error.getClass().getSimpleName();}}
   return driver;
  }
  void activityStarted(){started++;if(!foreground){foreground=true;apply(0);}}
@@ -40,7 +49,8 @@ final class EInkSupport {
  void readerInitialized(){if(foreground)apply(2);}
  private void apply(int operation){
   Driver d=driver();if(d==null)return;
-  try{if(operation==0)d.fast();else if(operation==1)d.normal();else d.clear();}catch(Exception ignored){}
+  String action=operation==0?"DU":operation==1?"DEFAULT":"GC";
+  try{if(operation==0)d.fast();else if(operation==1)d.normal();else d.clear();status=action+" requested";}catch(Exception error){status=action+" failed: "+error.getClass().getSimpleName();}
  }
  static Platform reflection(Classes classes){return new Platform(){
   public String property(String key)throws Exception{

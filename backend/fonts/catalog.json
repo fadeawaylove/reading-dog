@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "fonts": [
+    {
+      "id": "sans",
+      "name": "黑体",
+      "file": "reader-body.ttf",
+      "size": 4694156,
+      "sha256": "d3c2e210ba0423b3c3d0e1b725e1a88eccb57423d4e0a62991fc1ce8862855f4",
+      "url": "https://reader.fadeaway.ltd/fonts/reader-body.ttf"
+    },
+    {
+      "id": "serif",
+      "name": "宋体",
+      "file": "reader-serif.ttf",
+      "size": 7463484,
+      "sha256": "1b6a73b94406cc7411befac48a6ae6abb173a98facfb012573a43c7b7be264d8",
+      "url": "https://reader.fadeaway.ltd/fonts/reader-serif.ttf"
+    }
+  ]
+}

@@ -63,13 +63,7 @@ class AppUpdater {
             try{
                 if(!folder(context).isDirectory()&&!folder(context).mkdirs())throw new IOException("无法创建下载目录");
                 String digest=expectedDigest(target,token);
-                try{downloadFile(target.url,target,partial,token);}
-                catch(IOException primary){
-                    requireActive(token);
-                    if(UpdateRelease.isBackupUrl(target.url))throw primary;
-                    publish(token,()->received=0);
-                    downloadFile(target.backupUrl(target.name),target,partial,token);
-                }
+                downloadFile(target.url,target,partial,token);
                 publish(token,()->{received=target.size;state=State.VERIFYING;});
                 verify(partial,target,digest);requireActive(token);
                 if(apk(context).exists()&&!apk(context).delete())throw new IOException("无法替换旧安装包");
@@ -96,9 +90,7 @@ class AppUpdater {
     }
 
     UpdateRelease readRelease(int token)throws Exception {
-        String metadata;
-        try{metadata=readText(UpdateRelease.API,1024*1024,token);}
-        catch(IOException primary){requireActive(token);metadata=readText(UpdateRelease.BACKUP+"/latest.json",1024*1024,token);}
+        String metadata=readText(UpdateRelease.API,1024*1024,token);
         return new UpdateRelease(new JSONObject(metadata));
     }
 
@@ -111,31 +103,16 @@ class AppUpdater {
     private void requireActive(int token)throws IOException {if(generation!=token)throw new IOException("已取消");}
     String expectedDigest(UpdateRelease r,int token)throws Exception {
         if(!r.digest.isEmpty())return r.digest;
-        String sums;
-        try{sums=readText(r.checksumUrl,64*1024,token);}
-        catch(IOException primary){
-            requireActive(token);if(UpdateRelease.isBackupUrl(r.checksumUrl))throw primary;
-            sums=readText(r.backupUrl("SHA256SUMS.txt"),64*1024,token);
-        }
+        String sums=readText(r.checksumUrl,64*1024,token);
         return r.checksum(sums);
     }
 
     HttpURLConnection open(String address,int token)throws Exception {
-        URL url=new URL(address);
-        for(int i=0;i<6;i++){
-            requireActive(token);
-            String host=url.getHost();
-            if(!UpdateRelease.isBackupUrl(url.toString())&&(!"https".equals(url.getProtocol())||url.getUserInfo()!=null||url.getPort()!=-1||!(host.equals("api.github.com")||host.equals("github.com")||host.equals("release-assets.githubusercontent.com")||host.equals("objects.githubusercontent.com"))))throw new IOException("更新服务地址无效");
-            HttpURLConnection c=(HttpURLConnection)url.openConnection();connection=c;
-            c.setConnectTimeout(5000);c.setReadTimeout(5000);c.setInstanceFollowRedirects(false);
-            c.setRequestProperty("User-Agent","ReadingDog/"+currentVersion);c.setRequestProperty("Accept",host.equals("api.github.com")?"application/vnd.github+json":"application/octet-stream");
-            int code;
-            try{code=c.getResponseCode();}catch(Exception e){c.disconnect();throw e;}
-            if(code==301||code==302||code==303||code==307||code==308){String location=c.getHeaderField("Location");c.disconnect();if(location==null)throw new IOException("更新服务重定向异常");url=new URL(url,location);continue;}
-            if(code!=200){c.disconnect();if(code==403||code==429)throw new IOException("更新服务请求较多，请稍后重试");if(code==404)throw new IOException("暂未找到正式版本或安装包，请稍后重试");throw new IOException("更新服务暂不可用（"+code+"），请稍后重试");}
-            return c;
-        }
-        throw new IOException("更新服务重定向过多");
+        requireActive(token);
+        if(!address.equals(UpdateRelease.API))UpdateRelease.requireAssetUrl(address);
+        HttpURLConnection c=BackendClient.open(context,address);connection=c;c.setConnectTimeout(12000);c.setReadTimeout(30000);c.setRequestProperty("User-Agent","ReadingDog/"+currentVersion);
+        int code;try{code=c.getResponseCode();}catch(Exception e){c.disconnect();throw e;}
+        if(code!=200){c.disconnect();throw new IOException(code==404?"暂未找到正式版本或安装包，请稍后重试":"更新服务暂不可用（"+code+"），请稍后重试");}return c;
     }
     String readText(String url,int limit,int token)throws Exception {
         HttpURLConnection c=open(url,token);

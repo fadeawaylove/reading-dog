@@ -18,6 +18,9 @@
 *.keystore
 *.jks
 *.log
+/android-replica/assets/backend-private.json
+/backend/.env
+/backend/data/
 *.db
 *.db-*
 __pycache__/

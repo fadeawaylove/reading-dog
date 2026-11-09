@@ -25,6 +25,10 @@ jobs:
           java-version: '17'
       - name: Install Android SDK
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ''platforms;android-35'' ''build-tools;35.0.0'''
+      - name: Build and check private backend
+        shell: pwsh
+        run: |
+          ./backend/test.ps1
       - name: Check local e-ink policy and reflection bridge
         run: |
           mkdir -p "$RUNNER_TEMP/eink-checks"
@@ -53,41 +57,3 @@ jobs:
           head -1 "$OUT/badging.txt"
           unzip -t "$OUT/aligned.apk"
           echo 'Source, resources, DEX and APK packaging checks passed.' >> "$GITHUB_STEP_SUMMARY"
-  publish:
-    needs: build
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: release-assets/${{ github.ref_name }}
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Install Android build tools
-        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
-      - name: Verify and publish signed APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          VERSION=$(python3 -c 'import json; print(json.load(open("android-replica/version.json"))["name"])')
-          CODE=$(python3 -c 'import json; print(json.load(open("android-replica/version.json"))["code"])')
-          test "$TAG" = "v$VERSION"
-          cd android-replica/releases
-          sha256sum -c SHA256SUMS.txt
-          APK="reading-dog-$VERSION.apk"
-          BT="$ANDROID_HOME/build-tools/35.0.0"
-          "$BT/apksigner" verify --print-certs "$APK" | tee cert.txt
-          grep -F '3d036c2956aa9369777eb0966aa61ea6c84870a2c87860cd8e8c020ff8990bb8' cert.txt
-          "$BT/aapt2" dump badging "$APK" > badging.txt
-          grep -F "versionCode='$CODE' versionName='$VERSION'" badging.txt
-          python3 -c 'from pathlib import Path; s=Path("../../RELEASE_NOTES.md").read_text(); Path("/tmp/release-notes.md").write_text(s.split("\n# ",1)[0])'
-          gh release create "$TAG" "$APK" SHA256SUMS.txt --verify-tag --latest --title "阅读狗 $TAG" --notes-file /tmp/release-notes.md
-          gh release download "$TAG" --pattern "$APK" --pattern SHA256SUMS.txt --dir "$RUNNER_TEMP/published"
-          (cd "$RUNNER_TEMP/published" && sha256sum -c SHA256SUMS.txt)
-          gh release view "$TAG" --json url,isDraft,isPrerelease,assets

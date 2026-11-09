@@ -20,6 +20,12 @@ public final class EInkChecks {
   switch(name){case "android.os.SystemProperties":return Property.class;case "android.onyx.optimization.Constant":return Constants.class;case "android.onyx.optimization.EInkHelper":return Helper.class;case "android.onyx.ViewUpdateHelper":return Update.class;default:throw new ClassNotFoundException(name);}
  }
  public static void main(String[] args)throws Exception{
+  check(EInkSupport.stableDisplay("HANVON","unknown","unknown","unknown","unknown"),"Hanvon automatic rendering policy");
+  check(EInkSupport.stableDisplay("Qualcomm","unknown","PM6","unknown","unknown"),"PM6 recognized even with SoC manufacturer");
+  check(EInkSupport.stableDisplay("unknown","unknown","unknown","pm6_user","unknown"),"PM6 device identity fallback");
+  check(!EInkSupport.stableDisplay("Qualcomm","Xiaomi","phone","bengal","phone"),"chipset alone never enables eink rendering");
+  check(!EInkSupport.stableDisplay(null,null,"PM60",null,null),"unrelated model prefix excluded");
+  Device hanvon=new Device();EInkSupport hanvonSupport=new EInkSupport("hanvon","bengal",hanvon);hanvonSupport.activityStarted();hanvonSupport.readerInitialized();check(hanvon.connections==0,"Hanvon rendering identity never enables Onyx hardware calls");
   Device ordinary=new Device();EInkSupport phone=new EInkSupport("Xiaomi","bengal",ordinary);phone.activityStarted();phone.readerInitialized();phone.activityStopped(false);
   check(!phone.supported()&&ordinary.connections==0&&ordinary.reads==0,"ordinary phone never probes vendor API");
   for(String vendor:new String[]{"ONYX","allwinner","freescale","boyue"}){Device d=new Device();check(new EInkSupport(vendor,"unknown",d).supported(),"local manufacturer "+vendor);}

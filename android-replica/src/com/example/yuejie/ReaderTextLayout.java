@@ -23,6 +23,9 @@ final class ReaderTextLayout {
   this(text,paint,width,lineSpace,heading,bubble,false,0);
  }
  ReaderTextLayout(String text,TextPaint paint,int width,float lineSpace,boolean heading,float bubble,boolean tight,float bubbleHeight){
+  this(text,paint,width,lineSpace,heading,bubble,tight,bubbleHeight,true);
+ }
+ ReaderTextLayout(String text,TextPaint paint,int width,float lineSpace,boolean heading,float bubble,boolean tight,float bubbleHeight,boolean indentFirst){
   this.text=text;this.paint=paint;this.width=width;this.lineSpace=lineSpace;lineHeight=tight?inkHeight(paint):paint.getTextSize()*1.4f;
   ArrayList<Cluster> units=new ArrayList<>();float[] advances=new float[text.length()];TextPaint measuring=new TextPaint();measuring.setTypeface(paint.getTypeface());measuring.setTextSize(paint.getTextSize());measuring.setFakeBoldText(paint.isFakeBoldText());measuring.getTextWidths(text,advances);
   BreakIterator iterator=BreakIterator.getCharacterInstance(Locale.ROOT);iterator.setText(text);int start=iterator.first();
@@ -32,7 +35,7 @@ final class ReaderTextLayout {
   for(int i=1;i<units.size();i++){Cluster a=units.get(i-1),b=units.get(i);if(a.kind!=0&&b.kind!=0){if(a.kind==1)a.after=a.advance*.5f;if(b.kind==2)b.before=b.advance*.5f;}}
   clusters=Collections.unmodifiableList(units);ArrayList<Line> built=new ArrayList<>();int first=0;
   while(first<units.size()){
-   float indent=!heading&&first==0?2*paint.getTextSize():0,available=Math.max(1,width-indent),used=0,capacity=0,compression=0,ratio=0,hyphenWidth=0;int last=first;
+   float indent=!heading&&indentFirst&&first==0?2*paint.getTextSize():0,available=Math.max(1,width-indent),used=0,capacity=0,compression=0,ratio=0,hyphenWidth=0;int last=first;
    while(last<units.size()){
     int end=last+1;while(end<units.size()&&!canBreak(units,end,text)&&(word(text.codePointAt(units.get(last).start))||end-last<4))end++;
     float previous=last>first&&units.get(last-1).kind==1&&units.get(last).kind!=0?units.get(last-1).after:0;

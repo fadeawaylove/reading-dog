@@ -18,6 +18,7 @@ final class PaperUi {
  final String name;final Paint p=new Paint(3);LineIcon(String n,int color){name=n;p.setColor(color);p.setStrokeWidth(1.5f);p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);}
  void line(Canvas c,float... pts){Path x=new Path();x.moveTo(pts[0],pts[1]);for(int i=2;i<pts.length;i+=2)x.lineTo(pts[i],pts[i+1]);c.drawPath(x,p);}
  public void draw(Canvas c){c.save();c.translate(getBounds().left,getBounds().top);c.scale(getBounds().width()/24f,getBounds().height()/24f);switch(name){
+ case "更多":c.drawCircle(5,12,.8f,p);c.drawCircle(12,12,.8f,p);c.drawCircle(19,12,.8f,p);break;
  case "搜索":c.drawCircle(10,10,6,p);line(c,15,15,21,21);break;case "返回":line(c,14,5,7,12,14,19);break;case "下一页":line(c,9,5,16,12,9,19);break;
  case "发现":c.drawCircle(12,12,9,p);line(c,15,8,13,14,8,16,10,10,15,8);break;case "书架":line(c,4,4,4,21,21,21);line(c,8,5,8,17);line(c,12,3,12,17);line(c,17,5,20,17);break;
  case "目录":for(int y:new int[]{6,12,18}){c.drawCircle(4,y,.5f,p);line(c,8,y,21,y);}break;
@@ -41,7 +42,7 @@ final class PaperUi {
  static Bitmap loadCover(Context context,String url,String key)throws Exception{
   File folder=new File(context.getCacheDir(),"paper-covers");folder.mkdirs();File file=new File(folder,ProtocolCrypto.hex(java.security.MessageDigest.getInstance("SHA-256").digest(ProtocolCrypto.utf(key)))+".jpg");
   if(file.isFile()){Bitmap cached=BitmapFactory.decodeFile(file.getPath());if(cached!=null){file.setLastModified(System.currentTimeMillis());return cached;}file.delete();}
-  HttpURLConnection con=(HttpURLConnection)new URL(url).openConnection();con.setConnectTimeout(7000);con.setReadTimeout(9000);Bitmap result;
+  HttpURLConnection con=BackendClient.open(context,BackendClient.media(url));con.setConnectTimeout(7000);con.setReadTimeout(9000);Bitmap result;
   try{con.setRequestProperty("User-Agent","Mozilla/5.0");byte[] bytes;try(InputStream in=con.getInputStream()){bytes=ProtocolCrypto.read(in);}BitmapFactory.Options bounds=new BitmapFactory.Options();bounds.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(bytes,0,bytes.length,bounds);BitmapFactory.Options options=new BitmapFactory.Options();options.inSampleSize=1;while(Math.max(bounds.outWidth,bounds.outHeight)/options.inSampleSize>1024)options.inSampleSize*=2;result=BitmapFactory.decodeByteArray(bytes,0,bytes.length,options);}finally{con.disconnect();}
   if(result==null)throw new IOException("Unsupported cover image");
   synchronized(COVER_TASKS){try(OutputStream out=new FileOutputStream(file)){result.compress(Bitmap.CompressFormat.JPEG,90,out);}File[] files=folder.listFiles();if(files!=null){java.util.Arrays.sort(files,(a,b)->Long.compare(a.lastModified(),b.lastModified()));long total=0;for(File f:files)total+=f.length();for(File f:files){if(total<=16L*1024*1024)break;long size=f.length();if(f.delete())total-=size;}}}

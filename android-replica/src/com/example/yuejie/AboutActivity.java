@@ -15,7 +15,8 @@ import static com.example.yuejie.PaperUi.*;
 public class AboutActivity extends Activity implements AppUpdater.Listener {
     static final int PAPER=0xfff5f1e8,INK=0xff000000,MUTED=0xff000000,GREEN=0xff536951,RULE=0xffdedbd1;
     AppUpdater updater;
-    TextView action,progressText;
+    TextView action,progressText,syncLabel;
+    final Runnable syncChanged=()->{SyncEngine s=SyncEngine.get(this);if(syncLabel!=null)syncLabel.setText(s.status+(s.lastSuccess>0?"\n上次同步 "+android.text.format.DateFormat.format("MM-dd HH:mm",s.lastSuccess):""));};
     ProgressBar progress;
     Dialog dialog;
     AppUpdater.State rendered;
@@ -33,15 +34,15 @@ public class AboutActivity extends Activity implements AppUpdater.Listener {
         ImageView logo=new ImageView(this);logo.setImageDrawable(getApplicationInfo().loadIcon(getPackageManager()));logo.setContentDescription("阅读狗图标");brand.addView(logo,new LinearLayout.LayoutParams(d(70),d(70)));gap(brand,16);
         TextView name=PaperUi.heading(this,"阅读狗",24);name.setTextColor(INK);name.setGravity(Gravity.CENTER);brand.addView(name);gap(brand,10);TextView slogan=text(this,"把时间留给阅读",11,MUTED);slogan.setGravity(Gravity.CENTER);brand.addView(slogan);body.addView(brand);
         addRow(body,"当前版本","v"+updater.currentVersion,null);
-        addRow(body,"项目主页","GitHub　›",()->openPage());gap(body,28);
+        syncLabel=text(this,"",12,MUTED);syncLabel.setPadding(0,d(18),0,d(12));body.addView(syncLabel);body.addView(secondary("立即同步书架与进度",()->SyncEngine.schedule(this,0)));gap(body,28);
         action=primary("检查更新",()->{details=true;if(updater.state==AppUpdater.State.AVAILABLE||updater.state==AppUpdater.State.READY||updater.state==AppUpdater.State.DOWNLOADING||updater.state==AppUpdater.State.VERIFYING||updater.state==AppUpdater.State.DOWNLOAD_FAILED){changed();}else updater.check();});body.addView(action);
         TextView foot=text(this,"仅在你点击时检查新版本\n更新提示不会打断阅读",11,MUTED);foot.setGravity(Gravity.CENTER);foot.setLineSpacing(d(6),1);foot.setPadding(0,d(24),0,0);body.addView(foot);
     }
     void addRow(LinearLayout parent,String label,String value,Runnable click){LinearLayout line=row(this);line.setPadding(0,d(20),0,d(20));line.addView(text(this,label,14,INK),new LinearLayout.LayoutParams(0,-2,1));line.addView(text(this,value,11,MUTED));if(click!=null){line.setOnClickListener(v->click.run());line.setContentDescription(label);line.setFocusable(true);}parent.addView(line);View rule=new View(this);rule.setBackgroundColor(RULE);parent.addView(rule,new LinearLayout.LayoutParams(-1,d(1)));}
     TextView primary(String label,Runnable click){TextView button=PaperUi.button(this,label,click);button.setTextColor(0xffffffff);button.setBackground(bg(this,GREEN,10));button.setMinHeight(d(48));return button;}
     TextView secondary(String label,Runnable click){TextView button=PaperUi.button(this,label,click);button.setTextColor(MUTED);button.setBackgroundColor(android.graphics.Color.TRANSPARENT);return button;}
-    @Override protected void onResume(){super.onResume();updater.observe(this);}
-    @Override protected void onPause(){updater.remove(this);closeDialog();super.onPause();}
+    @Override protected void onResume(){super.onResume();updater.observe(this);SyncEngine.listeners.add(syncChanged);syncChanged.run();}
+    @Override protected void onPause(){SyncEngine.listeners.remove(syncChanged);updater.remove(this);closeDialog();super.onPause();}
     @Override protected void onSaveInstanceState(Bundle state){state.putBoolean("details",details);state.putBoolean("permission",permissionPrompt);super.onSaveInstanceState(state);}
     void closeDialog(){if(dialog!=null){dialog.dismiss();dialog=null;}rendered=null;progress=null;progressText=null;}
     void hideDetails(){details=false;permissionPrompt=false;closeDialog();}

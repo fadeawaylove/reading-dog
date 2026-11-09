@@ -2,11 +2,11 @@
 
 Android 原生 Java 小说阅读器，提供搜索、书架、正文分页、四种翻页动画、段评、离线缓存、全书页码和原文位置续读。
 
-源码位于 [android-replica](android-replica/README.md)。v0.17 的无动画翻页使用保留原背景的 5 毫秒无文字过渡；提供带 ± 按钮的文字粗细滑块，按实测步长 10 调节。
+Android 源码位于 [android-replica](android-replica/README.md)，独立 Java 后端位于 [backend](backend/README.md)。v0.24 起所有小说接口、图片、书架/进度同步及应用更新统一使用 `https://reader.fadeaway.ltd`。
 
-正式安装包见 [Releases](https://github.com/fadeawaylove/reading-dog/releases/latest)，沿用既有签名，支持覆盖升级。
+安装包沿用既有签名，支持覆盖升级。首次迁移需手动安装 v0.24，之后从 App「关于阅读狗」检查更新；不再发布新版 GitHub Release。GitHub 仅保留历史版本和源码验证工作流。
 
-v0.18 起，GitHub 连接超时或读取停滞 5 秒后会自动尝试备用下载。也可使用[备用下载](http://magpie.fadeaway.ltd/reading-dog/)。发布时将同一安装包上传到两个地址，流程见 [发布说明](deploy/README.md)。
+书架和阅读位置自动同步，无注册或登录页面；离线仍可阅读与修改书架，联网后补传。自用 APK 携带私有访问令牌，不公开分发。后端部署和私有发布流程见 [发布说明](deploy/README.md)。
 
 ## 构建
 

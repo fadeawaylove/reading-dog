@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $version = Get-Content (Join-Path $root 'version.json') -Raw | ConvertFrom-Json
-$sdk = 'C:\Android\Sdk'; $bt = "$sdk\build-tools\35.0.0"; $java = 'C:\Program Files\Android\Android Studio\jbr\bin'
+$sdk = 'C:\Android\Sdk'; $bt = "$sdk\build-tools\35.0.0"; $java = Split-Path -Parent (Get-Command javac -ErrorAction Stop).Source
 $env:Path = "$java;$env:Path"
 Remove-Item "$root\touch-build" -Recurse -Force -ErrorAction SilentlyContinue
 New-Item "$root\touch-build\classes" -ItemType Directory -Force | Out-Null
