@@ -21,7 +21,10 @@ final class LocalLibrary extends SQLiteOpenHelper {
   void remove(String id){SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{if(db.delete("books","id=?",new String[]{id})>0)LibrarySync.record(context,db,"shelf",id,LibrarySync.shelf(null,false,0),SyncClock.now(context,db));db.setTransactionSuccessful();}finally{db.endTransaction();}}
   List<Book> books(boolean recent){List<Book> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT json FROM books ORDER BY "+(recent?"last_read DESC, added DESC":"added DESC"),null)){while(c.moveToNext())try{out.add(new Book(new JSONObject(c.getString(0))));}catch(JSONException ignored){}}return out;}
   JSONObject progress(String id){try(Cursor c=getReadableDatabase().rawQuery("SELECT chapter,offset,chapter_index,total,title FROM progress WHERE book=?",new String[]{id})){if(c.moveToFirst())return new JSONObject().put("chapter",c.getString(0)).put("offset",c.getInt(1)).put("index",c.getInt(2)).put("total",c.getInt(3)).put("title",c.getString(4));}catch(JSONException ignored){}return null;}
-  void progress(String book,String chapter,int offset,int index,int total,String title){SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{
+  // Acquire the helper monitor before the transaction, like chapter()/directory().
+  // Otherwise acknowledgeRead can wait for a prefetch holding this monitor while
+  // that prefetch waits for our SQLite connection: a permanent UI-thread deadlock.
+  synchronized void progress(String book,String chapter,int offset,int index,int total,String title){SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{
     JSONObject old=progress(book);if(old!=null&&chapter.equals(old.optString("chapter"))&&offset==old.optInt("offset")&&index==old.optInt("index")&&total==old.optInt("total")){db.setTransactionSuccessful();return;}
     JSONObject value=LibrarySync.position(chapter,offset,index,total,title);long now=SyncClock.now(context,db);
     try{LibrarySync.applyPosition(db,book,value,now);}catch(JSONException e){throw new IllegalStateException(e);}LibrarySync.record(context,db,"progress",book,value,now);acknowledgeRead(book,chapter);db.setTransactionSuccessful();

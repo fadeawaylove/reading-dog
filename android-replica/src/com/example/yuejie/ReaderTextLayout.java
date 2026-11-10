@@ -30,6 +30,12 @@ final class ReaderTextLayout {
   ArrayList<Cluster> units=new ArrayList<>();float[] advances=new float[text.length()];TextPaint measuring=new TextPaint();measuring.setTypeface(paint.getTypeface());measuring.setTextSize(paint.getTextSize());measuring.setFakeBoldText(paint.isFakeBoldText());measuring.getTextWidths(text,advances);
   BreakIterator iterator=BreakIterator.getCharacterInstance(Locale.ROOT);iterator.setText(text);int start=iterator.first();
   for(int end=iterator.next();end!=BreakIterator.DONE;start=end,end=iterator.next()){
+   // A Chinese dash run is one punctuation unit. Some system fonts shape its
+   // characters together; separate drawTextRun calls can lose part of the glyph.
+   // Keeping the run intact also prevents justification from spacing it apart.
+   if(end==start+1&&text.charAt(start)=='\u2014'){
+    while(end<text.length()&&text.charAt(end)=='\u2014')end=iterator.following(end);
+   }
    float advance=0;for(int i=start;i<end;i++)advance+=advances[i];int kind=heading?0:compressType(text.codePointAt(start));if(kind!=0){Rect bounds=new Rect();measuring.getTextBounds(text,start,end,bounds);if(Math.abs(advance-paint.getTextSize())>1)kind=0;else if(bounds.width()>0&&bounds.right<advance){kind=bounds.left>=advance*.5f?2:bounds.right<=advance*.5f?1:0;}}units.add(new Cluster(start,end,kind,advance));
   }
   for(int i=1;i<units.size();i++){Cluster a=units.get(i-1),b=units.get(i);if(a.kind!=0&&b.kind!=0){if(a.kind==1)a.after=a.advance*.5f;if(b.kind==2)b.before=b.advance*.5f;}}

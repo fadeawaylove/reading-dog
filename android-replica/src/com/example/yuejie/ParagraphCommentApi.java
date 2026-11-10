@@ -1,12 +1,12 @@
 package com.example.yuejie;
 import android.content.*;import org.json.*;import java.io.*;
-/** Local comment cache with all upstream work delegated to the private backend. */
+/** Local comment cache backed by direct upstream requests. */
 final class ParagraphCommentApi {
  interface Remote{Object call(String method,JSONObject body)throws Exception;}
  Remote remote;
  final Context context;final LocalLibrary library;final CommentStore cache;
- ParagraphCommentApi(Context c,LocalLibrary l){context=c.getApplicationContext();library=l;cache=new CommentStore(c);remote=(method,body)->BackendClient.call(context,method,body);}
- ParagraphCommentApi(Context c,LocalLibrary l,NovelApi.Transport transport){this(c,l);}
+ ParagraphCommentApi(Context c,LocalLibrary l){this(c,l,NovelApi::http);}
+ ParagraphCommentApi(Context c,LocalLibrary l,NovelApi.Transport transport){context=c.getApplicationContext();library=l;cache=new CommentStore(c);DirectCommentSource direct=new DirectCommentSource(c,l,transport);remote=(method,body)->{String book=body.getString("book"),chapter=body.getString("chapter");switch(method){case "comments/metadata":return direct.metadata(book,chapter);case "comments/stats":return direct.stats(book,chapter,body.getString("version"));case "comments/page":return direct.comments(book,chapter,body.getString("version"),body.getString("paragraph"),body.optString("cursor"),body.getString("expected"));default:throw new IOException("未知段评请求");}};}
  static String key(String kind,String book,String chapter,String version,String para,String cursor){return (kind.equals("page")?"page-v2":kind)+":"+book+":"+chapter+":"+version+":"+para+":"+cursor;}
  static String secure(String url){return url.startsWith("http://")?"https://"+url.substring(7):url;}
  // The list summary may include paragraph terminators absent from extracted <p> text.

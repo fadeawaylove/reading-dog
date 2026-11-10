@@ -65,8 +65,7 @@ final class ReaderImages implements AutoCloseable {
   }finally{temp.delete();}
  }
  static void download(Context context,String url,File temp)throws Exception {
-  HttpURLConnection con=BackendClient.open(context,BackendClient.media(url));con.setConnectTimeout(8000);con.setReadTimeout(12000);
-  try{if(con.getResponseCode()!=200)throw new IOException("图片暂不可用");if(con.getContentLengthLong()>BYTE_LIMIT)throw new IOException("图片过大");try(InputStream in=con.getInputStream();OutputStream out=new FileOutputStream(temp)){byte[] block=new byte[8192];int n,total=0;while((n=in.read(block))!=-1){total+=n;if(total>BYTE_LIMIT)throw new IOException("图片过大");out.write(block,0,n);}}}finally{con.disconnect();}
+  byte[] bytes=UpstreamImages.read(url);try(OutputStream out=new FileOutputStream(temp)){out.write(bytes);}
  }
  static void trim(File folder){File[] files=folder.listFiles(f->!f.getName().endsWith(".part"));if(files==null)return;Arrays.sort(files,Comparator.comparingLong(File::lastModified));long size=0;for(File f:files)size+=f.length();for(File f:files){if(size<=DISK_LIMIT)break;long n=f.length();if(f.delete())size-=n;}}
  static void draw(Canvas canvas,RectF rect,State state,int ink){

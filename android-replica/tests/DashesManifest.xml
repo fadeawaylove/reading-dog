@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.dashfixture">
+ <application android:debuggable="true" android:label="Isolated punctuation checks" />
+ <instrumentation android:name="com.example.yuejie.DashChecks" android:targetPackage="com.example.yuejie.dashfixture" android:functionalTest="true" />
+</manifest>

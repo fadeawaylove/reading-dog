@@ -1,6 +1,6 @@
 # 阅读狗 · 极简单页主页
 
-Android 原生 Java，包名 `com.example.yuejie`，版本由 `version.json` 统一配置。v0.24 起所有远程业务统一由独立后端提供，手机保留 UI、原生排版和离线 SQLite；无登录自动同步书架与进度。构建时需要忽略的 `assets/backend-private.json`，部署及更新发布见 [发布说明](../deploy/README.md)。本文其余旧版协议验证记录保留为历史证据，当前接口边界以 [backend/README.md](../backend/README.md) 为准。
+Android 原生 Java，包名 `com.example.yuejie`，版本由 `version.json` 统一配置。v0.30 由手机直连番茄获取小说、段评及图片；后台仅提供无登录书架/进度同步、更新和字体资源。手机保留原生排版、SQLite 与离线缓存。恢复记录见 [DIRECT-RESTORE.md](DIRECT-RESTORE.md)。构建时需要忽略的 `assets/backend-private.json`，部署及更新发布见 [发布说明](../deploy/README.md)。本文其余旧版协议验证记录保留为历史证据，当前接口边界以 [backend/README.md](../backend/README.md) 为准。
 
 ## 功能
 

@@ -1,6 +1,6 @@
 # 阅读狗私有后端与版本发布
 
-从 v0.24 起，应用数据、同步、检查更新、APK 与校验文件统一使用 `https://reader.fadeaway.ltd`，不再创建 GitHub Release，也不向旧备用站上传。既有历史 Release 和下载站保留为历史资料。
+v0.30 起小说内容与图片由手机直连番茄；同步、检查更新、APK 与校验文件继续使用 `https://reader.fadeaway.ltd`，不再创建 GitHub Release，也不向旧备用站上传。既有历史 Release 和下载站保留为历史资料。
 
 首次迁移需要手动覆盖安装 v0.24（保留原签名及数据），旧版应用不会自动发现新的私有更新源。之后进入「关于阅读狗 → 检查更新」。
 
@@ -16,6 +16,8 @@
 
 ## 私有发布
 
+发布任务必须同时完成 GitHub 源码提交与推送，完成条件见根目录 [AGENTS.md](../AGENTS.md) 的版本发布规则。
+
 先递增 `android-replica/version.json` 的 name/code，并更新 `RELEASE_NOTES.md` 顶部说明。构建和测试通过后：
 
 ```powershell
@@ -29,7 +31,7 @@ python deploy/publish-release.py --password
 
 若已有获授权的 SSH 发布身份，也可使用 `--key <已有密钥>`；该身份应强制运行 `/usr/bin/python3 /opt/reading-dog-backend/receive-release.py`。此项目不会自动配置 SSH 授权。
 
-发布脚本校验包名、版本、原签名指纹和 SHA-256，再上传版本包；接收器校验大小、元数据、校验文件和 ZIP 完整性。每个版本不可替换成不同 APK，禁止回退最新 versionCode；版本目录先完整落盘，再原子更新 latest.json。上传后脚本通过 HTTPS 下载实际 APK 再次核对。整个流程不执行 Git push、打标签或 GitHub API。
+发布脚本校验包名、版本、原签名指纹和 SHA-256，再上传版本包；接收器校验大小、元数据、校验文件和 ZIP 完整性。每个版本不可替换成不同 APK，禁止回退最新 versionCode；版本目录先完整落盘，再原子更新 latest.json。上传后脚本通过 HTTPS 下载实际 APK 再次核对。发布脚本本身不执行 Git commit 或 Git push；执行发布任务时需另行提交本次版本对应的源码、版本号、发布说明、测试及文档，并推送到 GitHub 目标分支，核对远端提交后才算发布完成。
 
 仅生成本地发布包：`python deploy/publish-release.py --prepare-only`。
 

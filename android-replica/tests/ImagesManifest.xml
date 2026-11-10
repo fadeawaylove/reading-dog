@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.yuejie.imagefixture">
+ <uses-permission android:name="android.permission.INTERNET" />
  <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="Isolated body image checks" android:debuggable="true">
   <activity android:name="com.example.yuejie.ImageFixtureActivity" android:exported="true" />
  </application>
  <instrumentation android:name="com.example.yuejie.ImageChecks" android:targetPackage="com.example.yuejie.imagefixture" android:functionalTest="true" />
+ <instrumentation android:name="com.example.yuejie.DirectChecks" android:targetPackage="com.example.yuejie.imagefixture" android:functionalTest="true" />
+ <instrumentation android:name="com.example.yuejie.LibraryLockChecks" android:targetPackage="com.example.yuejie.imagefixture" android:functionalTest="true" />
 </manifest>

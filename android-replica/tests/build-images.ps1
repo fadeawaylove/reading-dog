@@ -1,3 +1,4 @@
+param([string]$ParityFixture)
 $ErrorActionPreference='Stop'
 $PSNativeCommandUseErrorActionPreference=$true
 $root=$PSScriptRoot
@@ -5,14 +6,23 @@ $app=Split-Path -Parent $root
 $out="$root/images-build"
 $bt='C:/Android/Sdk/build-tools/35.0.0'
 $android='C:/Android/Sdk/platforms/android-35/android.jar'
+if($ParityFixture){
+ if(!(Test-Path -LiteralPath $ParityFixture -PathType Leaf)){throw "Parity fixture not found: $ParityFixture"}
+ $ParityFixture=(Resolve-Path -LiteralPath $ParityFixture).Path
+}
 New-Item -ItemType Directory -Force "$out/classes","$out/dex","$out/assets" | Out-Null
 # Never include the private backend token in the isolated test APK.
-Get-ChildItem "$app/assets" -File | Where-Object Name -ne 'backend-private.json' | Copy-Item -Destination "$out/assets"
+Get-ChildItem "$app/assets" -File | Where-Object Name -notin @('backend-private.json','text-parity.json') | Copy-Item -Destination "$out/assets"
+# Do not silently reuse a historical corpus from an earlier optional build.
+$packedFixture=Join-Path $out 'assets/text-parity.json'
+if($ParityFixture){
+ if($ParityFixture -ne $packedFixture){Copy-Item -LiteralPath $ParityFixture -Destination $packedFixture}
+}else{Remove-Item -LiteralPath $packedFixture -Force -ErrorAction SilentlyContinue}
 $baseline=& git -C $app show HEAD:android-replica/src/com/example/yuejie/ReaderPaginator.java
 if($LASTEXITCODE -ne 0){throw 'Cannot load pure-text pagination baseline'}
 ($baseline -replace 'ReaderPaginator','LegacyReaderPaginator') | Set-Content -Encoding utf8 "$out/LegacyReaderPaginator.java"
 $sources=Get-ChildItem "$app/src" -Recurse -Filter *.java | ForEach-Object FullName
-& javac -encoding UTF-8 -source 8 -target 8 -cp $android -d "$out/classes" "$root/ImageFixtureActivity.java" "$root/ImageChecks.java" "$out/LegacyReaderPaginator.java" $sources
+& javac -encoding UTF-8 -source 8 -target 8 -cp $android -d "$out/classes" "$root/ImageFixtureActivity.java" "$root/ImageChecks.java" "$root/LibraryLockChecks.java" "$root/DirectChecks.java" "$root/DirectRecoveryChecks.java" "$out/LegacyReaderPaginator.java" $sources
 & "$bt/aapt2.exe" link -o "$out/unsigned.apk" -I $android --manifest "$root/ImagesManifest.xml" -A "$out/assets" --min-sdk-version 24 --target-sdk-version 28
 & jar cf "$out/checks.jar" -C "$out/classes" .
 & "$bt/d8.bat" --lib $android --output "$out/dex" "$out/checks.jar"

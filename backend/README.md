@@ -1,6 +1,6 @@
 # 阅读狗独立后端
 
-Java 17 HTTP 服务，承接小说接口、图片、单人多设备同步和自有更新下载。Android 保留本地 SQLite、排版、阅读设置、书签及离线缓存。无注册登录界面，业务 API 使用 APK 内注入的私有 Bearer token；`/health` 无需认证，手机首次安装使用单独的私有下载链接。
+Java 17 HTTP 服务，提供单人多设备同步、自有更新及字体下载，不再代理小说内容或图片。Android 保留本地 SQLite、排版、阅读设置、书签及离线缓存。无注册登录界面，业务 API 使用 APK 内注入的私有 Bearer token；`/health` 无需认证，手机首次安装使用单独的私有下载链接。
 
 ## 构建与启动
 
@@ -14,20 +14,17 @@ Java 17 HTTP 服务，承接小说接口、图片、单人多设备同步和自�
 
 ## 接口
 
+2026-11-10 已停用 search、detail、directory、chapter、page-metadata、comments/* 和 media 路由（返回 404）。手机直接请求番茄及其图片 CDN；旧版 v0.24–v0.29 的代理客户端需要升级至 v0.30。线上正式 APK 已更新至 v0.30。
+
 - `GET /api/v1/time`：服务器时间。
-- `POST /api/v1/search`：keyword、offset、search_id、passback；返回 books 和分页游标。
-- `POST /api/v1/detail`、`directory`、`chapter`、`page-metadata`：book / chapter 字符串 ID；directory 支持 force。
-- chapter 在原有字段之外返回 `image_version: 1` 与 `images: [{offset, url, width, height}]`。offset 为 `text` 中 U+FFFC 的 UTF-16 下标；width/height 未知时为 0。正文、段落文本和段评偏移保持原语义，图片地址仍通过 media 代理访问；旧客户端可忽略新增字段。
-- `POST /api/v1/comments/metadata`、`stats`、`page`：服务端验证正文版本与段落映射，返回 Android 所需结构。
-- `GET /api/v1/media?url=…`：仅允许指定上游图片域名、HTTPS 和图片类型；限制重定向、内网地址与响应大小，不是通用代理。
-- `POST /api/v1/sync`：cursor 与 operations；返回 ack、changes、cursor、more、server_time。小说接口成功返回 `{data: …}`，同步和时间返回自己的对象；错误为 `{error: …}` 并带相应非 200 状态。
+- `POST /api/v1/sync`：cursor 与 operations；返回 ack、changes、cursor、more、server_time。同步和时间返回自己的对象；错误为 `{error: …}` 并带相应非 200 状态。
 - `GET /api/v1/updates/latest`：私有版本元数据。`GET /releases/<version>/<file>`：不可变 APK / SHA256SUMS.txt。
 - `GET/HEAD /install/<随机凭据>/reading-dog-<version>.apk`：手机浏览器首次安装入口，只能下载授权版本，不能访问同步或其他 API。凭据仅以 SHA-256 哈希保存于 data/install-links.json；移除对应条目即可撤销链接。
 - `GET/HEAD /fonts/reader-body.ttf`、`/fonts/reader-serif.ttf`、`/fonts/catalog.json`：用户主动下载的可选字体及校验目录，无需认证。只允许这三份文件，存储于 data/fonts。源码字体保存在 backend/fonts，部署时复制到持久目录，权限允许服务 UID 10001 读取；不打入 Android 正式 APK。
 
 生成扫码下载链接：在服务器运行 `python3 /opt/reading-dog-backend/create-install-link.py 0.24`。该命令只为已发布 APK 创建链接，不改变应用版本或主 API 访问凭据；无需重建 APK。链接和二维码不进入公开仓库。
 
-上游签名、身份注册、密钥与重试从原 Android Java 实现迁移。`ProtocolCrypto` 的源代码保留在两端以兼容历史测试；Android 业务不再运行上游协议。服务端持久化身份与密钥绑定策略，最多一次空响应重新初始化，保留冷却间隔。
+上游签名、身份注册、密钥及有界重试现由 Android 执行。服务端历史协议类仅为旧回归测试保留，不由 HTTP 路由或启动路径调用。
 
 ## 同步语义
 

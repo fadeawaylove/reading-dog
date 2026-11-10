@@ -10,7 +10,7 @@ final class CommentExecutor extends ThreadPoolExecutor {
   int priority;final long order=sequence.incrementAndGet();final BooleanSupplier active;
   Job(int priority,BooleanSupplier active,Runnable work){super(work,null);this.priority=priority;this.active=active;}
   public int compareTo(Job other){int c=Integer.compare(priority,other.priority);return c==0?Long.compare(order,other.order):c;}
-  public void run(){if(isCancelled()||!active.getAsBoolean()){cancel(false);return;}if(BackendClient.readingRequests.get()>0){NovelApi.MAIN.postDelayed(()->{if(!isShutdown()&&active.getAsBoolean())CommentExecutor.super.execute(this);else cancel(false);},100);return;}BackendClient.commentPriority.set(priority);try{super.run();}finally{BackendClient.commentPriority.remove();}}
+  public void run(){if(isCancelled()||!active.getAsBoolean()){cancel(false);return;}if(NetworkWork.readingRequests.get()>0){NovelApi.MAIN.postDelayed(()->{if(!isShutdown()&&active.getAsBoolean())CommentExecutor.super.execute(this);else cancel(false);},100);return;}NetworkWork.commentPriority.set(priority);try{super.run();}finally{NetworkWork.commentPriority.remove();}}
  }
  CommentExecutor(){super(1,1,0,TimeUnit.MILLISECONDS,new PriorityBlockingQueue<Runnable>());}
  Job enqueue(int priority,BooleanSupplier active,Runnable work){Job job=new Job(priority,active,work);super.execute(job);return job;}

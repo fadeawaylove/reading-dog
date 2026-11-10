@@ -2,7 +2,7 @@
 
 Android 原生 Java 小说阅读器，提供搜索、书架、正文分页、四种翻页动画、段评、离线缓存、全书页码和原文位置续读。
 
-Android 源码位于 [android-replica](android-replica/README.md)，独立 Java 后端位于 [backend](backend/README.md)。v0.24 起所有小说接口、图片、书架/进度同步及应用更新统一使用 `https://reader.fadeaway.ltd`。
+Android 源码位于 [android-replica](android-replica/README.md)，独立 Java 后端位于 [backend](backend/README.md)。v0.30 恢复手机直连番茄：搜索、详情、目录、正文、段评和图片均不经过自建后台；`https://reader.fadeaway.ltd` 仅提供书架/进度同步、更新和字体资源。详见 [直连修复与验收](android-replica/DIRECT-RESTORE.md)。
 
 安装包沿用既有签名，支持覆盖升级。首次迁移需手动安装 v0.24，之后从 App「关于阅读狗」检查更新；不再发布新版 GitHub Release。GitHub 仅保留历史版本和源码验证工作流。
 
