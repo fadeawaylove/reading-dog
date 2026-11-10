@@ -20,6 +20,8 @@ public final class EInkChecks {
   switch(name){case "android.os.SystemProperties":return Property.class;case "android.onyx.optimization.Constant":return Constants.class;case "android.onyx.optimization.EInkHelper":return Helper.class;case "android.onyx.ViewUpdateHelper":return Update.class;default:throw new ClassNotFoundException(name);}
  }
  public static void main(String[] args)throws Exception{
+  check(EInkSupport.loadingNoticeDelay(true)==300,"eink fixed loading delay");
+  check(EInkSupport.loadingNoticeDelay(false)==0,"ordinary phone immediate loading");
   check(EInkSupport.stableDisplay("HANVON","unknown","unknown","unknown","unknown"),"Hanvon automatic rendering policy");
   check(EInkSupport.stableDisplay("Qualcomm","unknown","PM6","unknown","unknown"),"PM6 recognized even with SoC manufacturer");
   check(EInkSupport.stableDisplay("unknown","unknown","unknown","pm6_user","unknown"),"PM6 device identity fallback");

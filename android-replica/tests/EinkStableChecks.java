@@ -26,6 +26,11 @@ public final class EinkStableChecks extends Instrumentation {
  public void onCreate(Bundle args){super.onCreate(args);start();}
  public void onStart(){Bundle result=new Bundle();try{
   activity=startActivitySync(new Intent(getTargetContext(),ImageFixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+  ui(()->{getTargetContext().getSharedPreferences("ReaderActivity",0).edit().putBoolean("eink_stable_override",true).commit();});
+  ok(!new ReaderSettings(getTargetContext()).einkStable,"legacy true override cannot enable eink on ordinary phone");
+  ui(()->{getTargetContext().getSharedPreferences("ReaderActivity",0).edit().putBoolean("eink_stable_override",false).commit();});
+  ok(!new ReaderSettings(getTargetContext()).einkStable,"legacy false override leaves ordinary phone policy unchanged");
+  ui(()->{getTargetContext().getSharedPreferences("ReaderActivity",0).edit().remove("eink_stable_override").commit();});
   create(true,false);ok(surface.activeMode==PageTurnMode.NONE,"automatic eink policy overrides animation without rewriting saved mode");
   ReaderPageView old=surface.pages[1];long gen=old.generation;int draws=surface.sceneDraws;
   ui(()->{host.battery=42;host.progress="2/200";host.counts.put(0,99L);surface.invalidate();surface.invalidate();surface.warmNow();});settle();

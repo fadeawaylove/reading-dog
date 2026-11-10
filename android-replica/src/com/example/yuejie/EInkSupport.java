@@ -12,6 +12,7 @@ final class EInkSupport {
   for(String identity:new String[]{model,device,product})if(identity!=null&&identity.trim().toLowerCase(Locale.ROOT).matches("(?:hanvon[ _-]+)?pm6(?:[ _-].*)?"))return true;
   return false;
  }
+ static int loadingNoticeDelay(boolean eink){return eink?300:0;}
  interface Platform {String property(String key)throws Exception; Driver connect()throws Exception;}
  interface Driver {void fast()throws Exception; void normal()throws Exception; void clear()throws Exception;}
  interface Classes {Class<?> find(String name)throws Exception;}
